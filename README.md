@@ -1,61 +1,38 @@
-﻿# İki Kişilik Kamera Partisi
+# ZeyGame
 
-Vite, TypeScript, Canvas 2D ve MediaPipe Tasks Vision el takibi ile hazırlanmış, kamera kontrollü iki kişilik parti oyunu başlangıç projesi.
+## Proje açıklaması
 
-## Kurulum
+ZeyGame, kamera ve MediaPipe ile kontrol edilen iki kişilik, üç mini oyunlu parti oyunudur. Kamera ve algılama verileri tarayıcı içinde işlenir.
 
-Node.js 18 veya üzeri gerekir:
+## Kullanılan teknolojiler
 
-```bash
-npm install
-```
+Vite, TypeScript, Canvas 2D, Web Audio API, MediaPipe Tasks Vision, kamera API’leri ve temel PWA Service Worker.
 
-## Geliştirme sunucusu
+## Yerel çalıştırma
 
 ```bash
-npm run dev
+npm.cmd install
+npm.cmd run dev
 ```
 
-Tarayıcıda gösterilen yerel adresi açın ve **Oyunu Başlat** düğmesine basın. Kamera erişimi için uygulamanın güvenli bir bağlamda (localhost veya HTTPS) çalışması gerekir.
+Üretim kontrolü: `npm.cmd run build` ve önizleme için `npm.cmd run preview`.
 
-## Build ve test
+## Kamera izinleri
 
-Üretim derlemesini ve TypeScript kontrolünü çalıştırmak için:
+Kamera erişimi yalnızca **Oyunu Başlat** düğmesine basıldığında istenir. İzin reddedilirse veya kamera bulunamazsa Türkçe hata gösterilir. Kamera için localhost veya HTTPS gerekir.
 
-```bash
-npm run build
-```
+## Oyunlar
 
-Üretim çıktısını yerel olarak incelemek için:
+Buz Kırma, Çömelme Yarışı ve Ağız Açma Yarışı sırayla oynanır. Her oyun yalnızca ihtiyaç duyduğu el, pose veya yüz modelini kullanır. Oyunlar arasında sonuç, son oyunda final ekranı gösterilir.
 
-```bash
-npm run preview
-```
+## Mobil kullanım
 
-Kamera izni reddedildiğinde veya cihazda kamera bulunmadığında arayüz Türkçe açıklayıcı hata gösterir. Kamera akışı sayfa kapatılırken durdurulur.
+Telefonu sabit tutun, iyi ışık kullanın; Oyuncu 1 solda, Oyuncu 2 sağda durmalıdır. Tüm vücut oyunlarında kameradan biraz uzaklaşın. Arayüz dikey ve yatay telefon ekranlarına uyumludur.
 
-## MediaPipe el takibi
+## GitHub Pages yayınlama
 
-MediaPipe Hand Landmarker modeli yalnızca **Oyunu Başlat** düğmesine basıldıktan sonra yüklenir. El görüntüsü ve landmark verileri tarayıcı içinde işlenir; kamera görüntüsü herhangi bir sunucuya gönderilmez. CDN’de sabitlenmiş `@mediapipe/tasks-vision@1.0.1` sürümü kullanılır.
+Build scriptindeki `vite build --base=./` ayarı ve göreli PWA yolları GitHub Pages alt yolları için hazırlanmıştır. `npm.cmd run build` sonrasında `dist/` klasörünü Pages kaynağı olarak yayınlayın. Kamera ve PWA özellikleri için HTTPS gerekir.
 
-Test etmek için `npm run dev` ile uygulamayı açın, kamera iznini verin ve kameraya bir veya iki el gösterin. Her elin 21 noktası ve bağlantı çizgileri aynalanmış kamera görüntüsü üzerinde görünmelidir. El kadrajdan çıktığında uygulama çalışmaya devam eder.
+## PWA
 
-## Oyun yöneticisi ve Buz Kırma
-
-`GameManager`, `MENU`, `CALIBRATION`, `COUNTDOWN`, `PLAYING`, `RESULT` ve `FINAL` durumları arasında geçiş yapar. Kalibrasyon tamamlanınca üç saniyelik geri sayım başlar ve ardından 20 saniyelik **Buz Kırma** mini oyunu çalışır.
-
-Her oyuncunun kendi ekran yarısında buz küpleri oluşur. İşaret parmağı ucu (8 numaralı landmark) bir küpe üç kez dokunduğunda küp kırılır ve ilgili oyuncu bir puan kazanır. Küpler dört saniye içinde kırılmazsa kaybolur. Oyun sonunda skorlar ve Türkçe kazanan/beraberlik mesajı gösterilir. Kısa dokunma, kırılma ve geri sayım sesleri Web Audio API ile üretilir; ses desteklenmezse oyun çalışmaya devam eder.
-
-İkinci oyun **Çömelme Yarışı**dır. Oyun geçişinde yalnızca Pose Landmarker yüklenir ve iki vücut sol/sağ bölgeye ayrılır. Kalça-diz-ayak bileği açısı 110 derecenin altına indiğinde çömelme başlar; 160 derecenin üzerine çıktığında bir puan tamamlanır. Basit hareket yumuşatma uygulanır ve aynı çömelme ikinci kez sayılmaz.
-
-Üçüncü oyun **Ağız Açma Yarışı**dır. Bu aşamada yalnızca Face Landmarker yüklenir; yüzler sol/sağ bölgeye atanır ve `jawOpen` blendshape değeri 0.6 üzerine çıktığında oyuncu bir puan alır. Ağız kapanmadan tekrar puan verilmez. `mouthSmileLeft`, `mouthSmileRight`, `eyeBlinkLeft` ve `eyeBlinkRight` değerleri de oyuncu yüz verisinde saklanır. Yüz algılanmazsa oyun devam eder.
-
-## Menü ve oyun akışı
-
-Ana menüden oyun başlatılabilir, mini oyunların açıklamaları görülebilir veya nasıl oynanacağı okunabilir. Kalibrasyondan sonra her oyun için kısa geri sayım ve oyun talimatı/başlığı gösterilir. Oyunlar arasında skor, kazanan ve sonraki oyuna geçiş sayacı bulunan sonuç ekranı vardır. Tüm oyunların sonunda toplam skor ve genel kazanan gösterilir; **Tekrar Oyna** tüm skorları sıfırlar, **Ana Menüye Dön** oyun döngüsünü durdurur.
-
-Arayüz telefon dikey/yatay yönleri ve laptop ekranları için responsive tasarlanmıştır. Kamera görüntüsü hazır değilse siyah ekran yerine açıklayıcı mesaj gösterilir; model yüklemelerinde yükleme durumu kullanıcıya bildirilir.
-
-## İki oyunculu kalibrasyon
-
-Kamera ve model başladıktan sonra kısa bir kalibrasyon ekranı açılır. Görüntünün sol yarısı Oyuncu 1, sağ yarısı Oyuncu 2 olarak ayrılır. Bilek landmarkının aynalanmış x konumuna göre eller oyunculara atanır; iki tarafta da en az bir el algılanmadan kalibrasyon tamamlanmaz. Oyuncu 1 mavi, Oyuncu 2 pembe çizilir ve ortadaki dikey çizgi bölgeleri gösterir. İki el algılandığında kalibrasyon ekranı kapanır ve kamera/landmark çizimleri devam eder.
+Uygulama adı ve kısa adı **ZeyGame**’dir. Manifest, tema renkleri, ikon ve temel service worker eklenmiştir. Service worker yalnızca kabuk dosyalarını önbelleğe alır; kamera ve MediaPipe çalışma akışını değiştirmez.

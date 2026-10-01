@@ -41,7 +41,7 @@ const render = () => {
 
 app.querySelectorAll<HTMLButtonElement>('button').forEach((button) => button.addEventListener('click', async () => {
   const action = button.dataset.action; if (action === 'games' || action === 'howto') return showInfo(action);
-  if (action === 'home') { cancelAnimationFrame(frame); handTracker.close(); poseTracker.close(); faceTracker.close(); poseReady = false; faceReady = false; manager.reset(); finalActions.hidden = true; game.hidden = true; intro.hidden = false; return; }
+  if (action === 'home') { cancelAnimationFrame(frame); handTracker.close(); poseTracker.close(); faceTracker.close(); poseReady = false; faceReady = false; manager.reset(); finalActions.hidden = true; game.hidden = true; intro.hidden = false; q<HTMLButtonElement>('[data-action="start"]').disabled = false; return; }
   if (action === 'replay') { manager.reset(); finalActions.hidden = true; manager.enterCalibration(); previous = performance.now(); return; }
   if (action !== 'start') return;
   button.disabled = true; setLoading('Kamera izni bekleniyor…');
@@ -50,3 +50,4 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) => button.add
 }));
 window.addEventListener('resize', () => camera.resize()); window.addEventListener('orientationchange', () => camera.resize());
 window.addEventListener('beforeunload', () => { cancelAnimationFrame(frame); handTracker.close(); poseTracker.close(); faceTracker.close(); camera.stop(); });
+if ('serviceWorker' in navigator) window.addEventListener('load', () => { void navigator.serviceWorker.register('./sw.js'); });

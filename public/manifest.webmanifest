@@ -1,9 +1,12 @@
 {
-  "name": "İki Kişilik Kamera Partisi",
-  "short_name": "Kamera Partisi",
-  "start_url": "/",
+  "name": "ZeyGame",
+  "short_name": "ZeyGame",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#101827",
   "theme_color": "#101827",
-  "icons": []
+  "description": "Kamera kontrollü iki kişilik parti oyunları.",
+  "orientation": "any",
+  "icons": [{ "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
 }

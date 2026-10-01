@@ -14,8 +14,9 @@ export class CameraController {
     }
 
     try {
+      this.stop();
       this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
+        video: { facingMode: 'user', width: { ideal: 1280, max: 1280 }, height: { ideal: 720, max: 720 }, frameRate: { ideal: 30, max: 30 } },
         audio: false,
       });
       this.video.srcObject = this.stream;
