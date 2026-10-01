@@ -27,6 +27,7 @@ interface VisionModule {
 export class HandTracker {
   private landmarker: HandLandmarkerInstance | null = null;
   private lastVideoTime = -1;
+  private lastLandmarks: HandLandmark[][] = [];
 
   async load(): Promise<void> {
     try {
@@ -47,13 +48,15 @@ export class HandTracker {
     }
   }
 
-  detectAndDraw(video: HTMLVideoElement, canvas: HTMLCanvasElement): void {
-    if (!this.landmarker || !video.videoWidth || video.currentTime === this.lastVideoTime) return;
+  detectAndDraw(video: HTMLVideoElement, canvas: HTMLCanvasElement): HandLandmark[][] {
+    if (!this.landmarker || !video.videoWidth) return this.lastLandmarks;
+    if (video.currentTime === this.lastVideoTime) return this.lastLandmarks;
     this.lastVideoTime = video.currentTime;
 
     const result = this.landmarker.detectForVideo(video, performance.now());
+    this.lastLandmarks = result.landmarks ?? [];
     const context = canvas.getContext('2d');
-    if (!context) return;
+    if (!context) return this.lastLandmarks;
     const { drawWidth, drawHeight, offsetX, offsetY } = this.getVideoRect(video, canvas);
     context.save();
     context.lineWidth = Math.max(2, canvas.width / 360);
@@ -78,12 +81,14 @@ export class HandTracker {
       }
     }
     context.restore();
+    return this.lastLandmarks;
   }
 
   close(): void {
     this.landmarker?.close();
     this.landmarker = null;
     this.lastVideoTime = -1;
+    this.lastLandmarks = [];
   }
 
   private getVideoRect(video: HTMLVideoElement, canvas: HTMLCanvasElement) {

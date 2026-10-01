@@ -11,6 +11,15 @@ export interface HandLandmark {
   z: number;
 }
 
+export type NormalizedLandmark = HandLandmark;
+
+export type PlayerTracking = {
+  hands: NormalizedLandmark[][];
+  detected: boolean;
+};
+
+export type PlayersTracking = [PlayerTracking, PlayerTracking];
+
 export interface HandTrackingError {
   status: 'model';
   message: string;
