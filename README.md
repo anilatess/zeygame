@@ -23,7 +23,7 @@ Kamera erişimi yalnızca **Oyunu Başlat** düğmesine basıldığında istenir
 
 ## Oyunlar
 
-Buz Kırma, Çömelme Yarışı ve Ağız Açma Yarışı sırayla oynanır. Her oyun yalnızca ihtiyaç duyduğu el, pose veya yüz modelini kullanır. Oyunlar arasında sonuç, son oyunda final ekranı gösterilir.
+Buz Kırma, Çömelme Yarışı, Ağız Açma Yarışı ve Meyve Kesme sırayla oynanır. Meyve Kesme yalnızca el takibini kullanır; işaret parmağı ucu ile meyvelere dokunulur, bombalara dokunmak 2 puan kaybettirir. Her oyun yalnızca ihtiyaç duyduğu el, pose veya yüz modelini kullanır. Oyunlar arasında sonuç, son oyunda final ekranı gösterilir.
 
 ## Mobil kullanım
 

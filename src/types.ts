@@ -29,6 +29,7 @@ export type GameState = 'MENU' | 'CALIBRATION' | 'COUNTDOWN' | 'PLAYING' | 'RESU
 
 export type MiniGame = {
   tracking: 'hands' | 'pose' | 'face';
+  needs?: 'hands' | 'pose' | 'face';
   start(width: number, height: number): void;
   update(deltaTime: number, players: PlayersTracking): void;
   draw(context: CanvasRenderingContext2D): void;
