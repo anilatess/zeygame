@@ -23,7 +23,7 @@ Kamera erişimi yalnızca **Oyunu Başlat** düğmesine basıldığında istenir
 
 ## Oyunlar
 
-Buz Kırma, Çömelme Yarışı, Ağız Açma Yarışı, Meyve Kesme ve Zıplama Yarışı sırayla oynanır. Meyve Kesme yalnızca el takibini kullanır; işaret parmağı ucu ile meyvelere dokunulur, bombalara dokunmak 2 puan kaybettirir. Zıplama Yarışı yalnızca pose takibini kullanır; kalça merkezinin (23/24) referansa göre yukarı çıkıp tekrar inmesi bir zıplama sayar. Her oyun yalnızca ihtiyaç duyduğu el, pose veya yüz modelini kullanır. Oyunlar arasında sonuç, son oyunda final ekranı gösterilir.
+Buz Kırma, Çömelme Yarışı, Ağız Açma Yarışı, Meyve Kesme, Zıplama Yarışı ve Dans Taklidi sırayla oynanır. Dans Taklidi dört adet altı saniyelik poz turunda eklem açılarını karşılaştırır ve turdaki en yüksek benzerliği puana dönüştürür. Her oyun yalnızca ihtiyaç duyduğu el, pose veya yüz modelini kullanır. Oyunlar arasında sonuç, son oyunda final ekranı gösterilir.
 
 ## Mobil kullanım
 

@@ -15,7 +15,7 @@ export class GameManager {
 
   getState(): GameState { return this.state; }
   getCountdown(): number { return Math.ceil(this.countdown); }
-  getRemainingTime(): number { return Math.max(0, Math.ceil(20 - this.elapsed)); }
+  getRemainingTime(): number { return Math.max(0, Math.ceil((this.miniGame.duration ?? 20) - this.elapsed)); }
   getScores(): [number, number] { return [...this.lastScores]; }
   getTotals(): [number, number] { return [...this.totals]; }
   getGameName(): string { return ['Buz Kırma', 'Çömelme Yarışı', 'Ağız Açma Yarışı'][this.index] ?? 'Mini Oyun'; }
@@ -41,7 +41,7 @@ export class GameManager {
     } else if (this.state === 'PLAYING') {
       this.elapsed += deltaTime;
       this.miniGame.update(deltaTime, players);
-      if (this.elapsed >= 20) {
+      if (this.elapsed >= (this.miniGame.duration ?? 20)) {
         this.lastScores = this.miniGame.getScores();
         this.totals[0] += this.lastScores[0]; this.totals[1] += this.lastScores[1];
         this.state = 'RESULT';
