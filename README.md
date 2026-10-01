@@ -23,7 +23,7 @@ Kamera erişimi yalnızca **Oyunu Başlat** düğmesine basıldığında istenir
 
 ## Oyunlar
 
-Buz Kırma, Çömelme Yarışı, Ağız Açma Yarışı, Meyve Kesme, Zıplama Yarışı, Dans Taklidi ve Surat Taklidi sırayla oynanır. Dans Taklidi dört adet altı saniyelik poz turunda eklem açılarını karşılaştırır. Surat Taklidi dört adet altı saniyelik turda `jawOpen`, gülümseme, göz kırpma, kaş ve dudak büzme blendshape değerlerini karşılaştırır; her turda yalnızca en yüksek benzerlik skoru puana dönüştürülür. Her oyun yalnızca ihtiyaç duyduğu el, pose veya yüz modelini kullanır. Oyunlar arasında sonuç, son oyunda final ekranı gösterilir.
+Buz Kırma, Çömelme Yarışı, Ağız Açma Yarışı, Meyve Kesme, Zıplama Yarışı, Dans Taklidi, Surat Taklidi ve Ağızla Yakala sırayla oynanır. Ağızla Yakala’da burun landmarkı yüz merkezi için yaklaşık ağız konumuna çevrilir; `jawOpen` 0.6 veya üzerindeyken düşen yiyecekler yakalanır. Normal yiyecek 1, altın yiyecek 2 puan verir; bomba 2 puan düşürür. Her oyun yalnızca ihtiyaç duyduğu el, pose veya yüz modelini kullanır. Oyunlar arasında sonuç, son oyunda final ekranı gösterilir.
 
 ## Mobil kullanım
 

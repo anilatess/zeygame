@@ -12,6 +12,7 @@ import { FruitSlice } from './games/fruit-slice';
 import { JumpRace } from './games/jump-race';
 import { DanceMimic } from './games/dance-mimic';
 import { FaceMimic } from './games/face-mimic';
+import { MouthCatch } from './games/mouth-catch';
 
 const app = document.querySelector<HTMLDivElement>('#app'); if (!app) throw new Error('Uygulama kökü bulunamadı.');
 app.innerHTML = `<section class="app"><div class="card menu-card"><div class="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</div><h1>Hazır mısınız?</h1><p>Hareketlerinizi kullanarak üç mini oyunda yarışın.</p><p class="status" role="alert" aria-live="polite"></p><div class="menu-actions"><button data-action="start">Oyunu Başlat</button><button data-action="games">Oyunları Göster</button><button data-action="howto">Nasıl Oynanır?</button></div><div class="info-panel" hidden></div></div></section><section class="game" hidden><video autoplay muted playsinline></video><canvas></canvas><div class="camera-message" hidden></div><div class="calibration" hidden><div class="calibration-card"><div class="eyebrow">Kalibrasyon</div><h2>Oyuncular yerleşsin</h2><p>Oyuncu 1 sol tarafta durmalı</p><p>Oyuncu 2 sağ tarafta durmalı</p><p>İki oyuncunun elleri algılanmalı</p><p class="calibration-status"></p></div></div><div class="final-actions" hidden><button data-action="replay">Tekrar Oyna</button><button data-action="home">Ana Menüye Dön</button></div></section>`;
@@ -21,7 +22,7 @@ const intro = q<HTMLElement>('.app'), game = q<HTMLElement>('.game'), status = q
 const video = q<HTMLVideoElement>('video'), canvas = q<HTMLCanvasElement>('canvas'), calibration = q<HTMLElement>('.calibration'), calibrationStatus = q<HTMLParagraphElement>('.calibration-status');
 const cameraMessage = q<HTMLElement>('.camera-message'), finalActions = q<HTMLElement>('.final-actions');
 const camera = new CameraController(video, canvas), handTracker = new HandTracker(), playerTracker = new PlayerTracker(), poseTracker = new PoseTracker(), faceTracker = new FaceTracker();
-const manager = new GameManager([new IceBreaker(), new SquatRace(), new MouthOpenRace(), new FruitSlice(), new JumpRace(), new DanceMimic(), new FaceMimic()]);
+const manager = new GameManager([new IceBreaker(), new SquatRace(), new MouthOpenRace(), new FruitSlice(), new JumpRace(), new DanceMimic(), new FaceMimic(), new MouthCatch()]);
 let poseReady = false, poseLoading = false, faceReady = false, faceLoading = false, frame = 0, previous = performance.now();
 
 function showInfo(kind: 'games' | 'howto'): void { info.hidden = false; info.innerHTML = kind === 'games' ? '<h2>Mini oyunlar</h2><p><b>Buz Kırma:</b> İşaret parmağınla küplere üç kez dokun.</p><p><b>Çömelme Yarışı:</b> Çömelip kalkarak puan topla.</p><p><b>Ağız Açma Yarışı:</b> Ağzını aç, rakibinden fazla puan al.</p>' : '<h2>Nasıl oynanır?</h2><p>Oyuncu 1 solda, Oyuncu 2 sağda durmalı.</p><p>Telefon veya laptop sabit konumda olmalı ve iyi ışık kullanılmalı.</p><p>Tüm vücut oyunlarında kameradan biraz uzakta durun.</p>'; }
