@@ -1,5 +1,6 @@
 import './styles.css';
 import { CameraController } from './camera';
+import { HandTracker } from './hand-tracker';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Uygulama kökü bulunamadı.');
@@ -27,15 +28,22 @@ const game = app.querySelector<HTMLElement>('.game')!;
 const video = app.querySelector<HTMLVideoElement>('video')!;
 const canvas = app.querySelector<HTMLCanvasElement>('canvas')!;
 const camera = new CameraController(video, canvas);
+const handTracker = new HandTracker();
 let animationFrame = 0;
 
-const render = () => { camera.draw(); animationFrame = requestAnimationFrame(render); };
+const render = () => {
+  camera.draw();
+  handTracker.detectAndDraw(video, canvas);
+  animationFrame = requestAnimationFrame(render);
+};
 
 startButton.addEventListener('click', async () => {
   startButton.disabled = true;
   status.textContent = 'Kamera izni bekleniyor…';
   try {
     await camera.start();
+    status.textContent = 'El takip modeli yükleniyor…';
+    await handTracker.load();
     intro.hidden = true;
     game.hidden = false;
     camera.resize();
@@ -49,4 +57,4 @@ startButton.addEventListener('click', async () => {
 
 window.addEventListener('resize', () => camera.resize());
 window.addEventListener('orientationchange', () => camera.resize());
-window.addEventListener('beforeunload', () => { cancelAnimationFrame(animationFrame); camera.stop(); });
+window.addEventListener('beforeunload', () => { cancelAnimationFrame(animationFrame); handTracker.close(); camera.stop(); });
