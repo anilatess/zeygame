@@ -1,0 +1,9 @@
+{
+  "name": "İki Kişilik Kamera Partisi",
+  "short_name": "Kamera Partisi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#101827",
+  "theme_color": "#101827",
+  "icons": []
+}
