@@ -26,6 +26,11 @@ export class PlayerTracker {
   }
 
   drawOverlay(canvas: HTMLCanvasElement, players: PlayersTracking): void {
+    this.drawRegions(canvas);
+    this.drawLandmarks(canvas, players);
+  }
+
+  drawRegions(canvas: HTMLCanvasElement): void {
     const context = canvas.getContext('2d');
     if (!context) return;
     const middle = canvas.width / 2;
@@ -38,7 +43,13 @@ export class PlayerTracker {
     context.lineTo(middle, canvas.height);
     context.stroke();
     context.setLineDash([]);
+    context.restore();
+  }
 
+  drawLandmarks(canvas: HTMLCanvasElement, players: PlayersTracking): void {
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.save();
     players.forEach((player, playerIndex) => {
       context.strokeStyle = PLAYER_COLORS[playerIndex];
       context.fillStyle = PLAYER_COLORS[playerIndex];

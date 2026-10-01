@@ -40,6 +40,12 @@ MediaPipe Hand Landmarker modeli yalnızca **Oyunu Başlat** düğmesine basıld
 
 Test etmek için `npm run dev` ile uygulamayı açın, kamera iznini verin ve kameraya bir veya iki el gösterin. Her elin 21 noktası ve bağlantı çizgileri aynalanmış kamera görüntüsü üzerinde görünmelidir. El kadrajdan çıktığında uygulama çalışmaya devam eder.
 
+## Oyun yöneticisi ve Buz Kırma
+
+`GameManager`, `MENU`, `CALIBRATION`, `COUNTDOWN`, `PLAYING`, `RESULT` ve `FINAL` durumları arasında geçiş yapar. Kalibrasyon tamamlanınca üç saniyelik geri sayım başlar ve ardından 20 saniyelik **Buz Kırma** mini oyunu çalışır.
+
+Her oyuncunun kendi ekran yarısında buz küpleri oluşur. İşaret parmağı ucu (8 numaralı landmark) bir küpe üç kez dokunduğunda küp kırılır ve ilgili oyuncu bir puan kazanır. Küpler dört saniye içinde kırılmazsa kaybolur. Oyun sonunda skorlar ve Türkçe kazanan/beraberlik mesajı gösterilir. Kısa dokunma, kırılma ve geri sayım sesleri Web Audio API ile üretilir; ses desteklenmezse oyun çalışmaya devam eder.
+
 ## İki oyunculu kalibrasyon
 
 Kamera ve model başladıktan sonra kısa bir kalibrasyon ekranı açılır. Görüntünün sol yarısı Oyuncu 1, sağ yarısı Oyuncu 2 olarak ayrılır. Bilek landmarkının aynalanmış x konumuna göre eller oyunculara atanır; iki tarafta da en az bir el algılanmadan kalibrasyon tamamlanmaz. Oyuncu 1 mavi, Oyuncu 2 pembe çizilir ve ortadaki dikey çizgi bölgeleri gösterir. İki el algılandığında kalibrasyon ekranı kapanır ve kamera/landmark çizimleri devam eder.
