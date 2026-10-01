@@ -33,6 +33,16 @@ Telefonu sabit tutun, iyi ışık kullanın; Oyuncu 1 solda, Oyuncu 2 sağda dur
 
 Build scriptindeki `vite build --base=./` ayarı ve göreli PWA yolları GitHub Pages alt yolları için hazırlanmıştır. `npm.cmd run build` sonrasında `dist/` klasörünü Pages kaynağı olarak yayınlayın. Kamera ve PWA özellikleri için HTTPS gerekir.
 
+### GitHub Actions ile otomatik yayınlama
+
+1. Değişiklikleri GitHub repository’nizin `main` branch’ine gönderin.
+2. Repository’de **Settings → Pages** bölümünü açın.
+3. **Build and deployment → Source** alanında **GitHub Actions** seçin.
+4. `.github/workflows/deploy.yml` workflow’u `main` branch push’larında otomatik olarak çalışır. Node.js kurulumu, `npm ci`, `npm run build` ve `dist` artifact yükleme adımları workflow içinde tanımlıdır.
+5. Workflow tamamlandığında **Settings → Pages** bölümündeki **Visit site** bağlantısından yayınlanan adresi açın. Aynı adres Actions deploy çıktısında da görünür.
+
+GitHub Pages HTTPS kullandığı için kamera izni ve PWA özellikleri yayınlanan adreste kullanılabilir. MediaPipe WASM/model dosyaları sabit CDN adreslerinden tarayıcıda yüklenir; service worker, manifest ve ikon yolları GitHub Pages alt diziniyle uyumludur.
+
 ## PWA
 
 Uygulama adı ve kısa adı **ZeyGame**’dir. Manifest, tema renkleri, ikon ve temel service worker eklenmiştir. Service worker yalnızca kabuk dosyalarını önbelleğe alır; kamera ve MediaPipe çalışma akışını değiştirmez.
