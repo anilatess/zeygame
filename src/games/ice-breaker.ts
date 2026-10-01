@@ -6,6 +6,7 @@ const PLAYER_COLORS = ['#60a5fa', '#f472b6'] as const;
 const CUBE_LIFETIME = 4;
 
 export class IceBreaker implements MiniGame {
+  readonly tracking = 'hands' as const;
   private width = 0;
   private height = 0;
   private cubes: IceCube[] = [];

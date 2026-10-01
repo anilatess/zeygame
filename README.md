@@ -46,6 +46,8 @@ Test etmek için `npm run dev` ile uygulamayı açın, kamera iznini verin ve ka
 
 Her oyuncunun kendi ekran yarısında buz küpleri oluşur. İşaret parmağı ucu (8 numaralı landmark) bir küpe üç kez dokunduğunda küp kırılır ve ilgili oyuncu bir puan kazanır. Küpler dört saniye içinde kırılmazsa kaybolur. Oyun sonunda skorlar ve Türkçe kazanan/beraberlik mesajı gösterilir. Kısa dokunma, kırılma ve geri sayım sesleri Web Audio API ile üretilir; ses desteklenmezse oyun çalışmaya devam eder.
 
+İkinci oyun **Çömelme Yarışı**dır. Oyun geçişinde yalnızca Pose Landmarker yüklenir ve iki vücut sol/sağ bölgeye ayrılır. Kalça-diz-ayak bileği açısı 110 derecenin altına indiğinde çömelme başlar; 160 derecenin üzerine çıktığında bir puan tamamlanır. Basit hareket yumuşatma uygulanır ve aynı çömelme ikinci kez sayılmaz.
+
 ## İki oyunculu kalibrasyon
 
 Kamera ve model başladıktan sonra kısa bir kalibrasyon ekranı açılır. Görüntünün sol yarısı Oyuncu 1, sağ yarısı Oyuncu 2 olarak ayrılır. Bilek landmarkının aynalanmış x konumuna göre eller oyunculara atanır; iki tarafta da en az bir el algılanmadan kalibrasyon tamamlanmaz. Oyuncu 1 mavi, Oyuncu 2 pembe çizilir ve ortadaki dikey çizgi bölgeleri gösterir. İki el algılandığında kalibrasyon ekranı kapanır ve kamera/landmark çizimleri devam eder.

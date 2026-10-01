@@ -7,7 +7,10 @@ export class GameManager {
   private resultTime = 0;
   private lastScores: [number, number] = [0, 0];
 
-  constructor(private readonly miniGame: MiniGame) {}
+  private index = 0;
+  constructor(private readonly games: MiniGame[]) {}
+  private get miniGame(): MiniGame { return this.games[this.index]; }
+  getTrackingType(): 'hands' | 'pose' { return this.miniGame.tracking; }
 
   getState(): GameState { return this.state; }
   getCountdown(): number { return Math.ceil(this.countdown); }
@@ -40,7 +43,8 @@ export class GameManager {
       }
     } else if (this.state === 'RESULT') {
       this.resultTime += deltaTime;
-      if (this.resultTime >= 5) this.state = 'FINAL';
+      if (this.resultTime >= 3 && this.index < this.games.length - 1) { this.index++; this.state = 'COUNTDOWN'; this.countdown = 3; this.playBeep(); }
+      else if (this.resultTime >= 5) this.state = 'FINAL';
     }
   }
 

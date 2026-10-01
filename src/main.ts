@@ -4,6 +4,8 @@ import { HandTracker } from './hand-tracker';
 import { PlayerTracker } from './player-tracker';
 import { GameManager } from './game-manager';
 import { IceBreaker } from './games/ice-breaker';
+import { PoseTracker } from './pose-tracker';
+import { SquatRace } from './games/squat-race';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Uygulama kökü bulunamadı.');
@@ -32,7 +34,10 @@ const calibrationStatus = app.querySelector<HTMLParagraphElement>('.calibration-
 const camera = new CameraController(video, canvas);
 const handTracker = new HandTracker();
 const playerTracker = new PlayerTracker();
-const gameManager = new GameManager(new IceBreaker());
+const poseTracker = new PoseTracker();
+const gameManager = new GameManager([new IceBreaker(), new SquatRace()]);
+let poseLoading = false;
+let poseReady = false;
 let animationFrame = 0;
 let previousTime = performance.now();
 
@@ -42,6 +47,9 @@ const render = () => {
   previousTime = now;
   camera.draw();
   const players = playerTracker.classify(handTracker.detectAndDraw(video, canvas));
+  if (gameManager.getTrackingType() === 'pose' && !poseLoading && !poseReady) { poseLoading = true; status.textContent = 'Vücut takip modeli yükleniyor…'; void poseTracker.load().then(() => { poseReady = true; }).catch((e) => { status.textContent = e instanceof Error ? e.message : 'Pose modeli yüklenemedi.'; }).finally(() => { poseLoading = false; }); }
+  const poses = gameManager.getTrackingType() === 'pose' ? poseTracker.detect(video) : [{ pose: null, detected: false }, { pose: null, detected: false }];
+  players[0].pose = poses[0]; players[1].pose = poses[1];
   playerTracker.drawRegions(canvas);
   gameManager.update(deltaTime, players, canvas.width, canvas.height);
   if (gameManager.getState() === 'CALIBRATION') {
@@ -52,6 +60,7 @@ const render = () => {
   } else calibration.hidden = true;
   const context = canvas.getContext('2d');
   if (context) gameManager.draw(context);
+  if (context && gameManager.getTrackingType() === 'pose') poseTracker.draw(context, poses);
   playerTracker.drawLandmarks(canvas, players);
   animationFrame = requestAnimationFrame(render);
 };
@@ -73,4 +82,4 @@ startButton.addEventListener('click', async () => {
 
 window.addEventListener('resize', () => camera.resize());
 window.addEventListener('orientationchange', () => camera.resize());
-window.addEventListener('beforeunload', () => { cancelAnimationFrame(animationFrame); handTracker.close(); camera.stop(); });
+window.addEventListener('beforeunload', () => { cancelAnimationFrame(animationFrame); handTracker.close(); poseTracker.close(); camera.stop(); });
