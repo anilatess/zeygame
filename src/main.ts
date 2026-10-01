@@ -30,7 +30,8 @@ function setLoading(text: string): void { status.textContent = `⏳ ${text}`; }
 
 const render = () => {
   const now = performance.now(), dt = Math.min((now - previous) / 1000, 0.1); previous = now; camera.draw();
-  if (!video.videoWidth) cameraMessage.hidden = false, cameraMessage.textContent = 'Kamera görüntüsü bekleniyor…'; else cameraMessage.hidden = true;
+  if (!camera.isReady()) { cameraMessage.hidden = false; cameraMessage.textContent = 'Kamera görüntüsü hazırlanıyor…'; frame = requestAnimationFrame(render); return; }
+  cameraMessage.hidden = true;
   const players = playerTracker.classify(handTracker.detectAndDraw(video, canvas));
   const type = manager.getTrackingType();
   if (type === 'pose' && !poseReady && !poseLoading) { poseLoading = true; setLoading('Vücut modeli yükleniyor…'); void poseTracker.load().then(() => { poseReady = true; }).catch(e => { status.textContent = e instanceof Error ? e.message : 'Vücut modeli yüklenemedi.'; }).finally(() => { poseLoading = false; }); }

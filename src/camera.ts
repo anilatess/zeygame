@@ -22,6 +22,10 @@ export class CameraController {
       this.video.srcObject = this.stream;
       this.video.muted = true;
       this.video.playsInline = true;
+      await new Promise<void>((resolve) => {
+        if (this.video.readyState >= HTMLMediaElement.HAVE_METADATA) resolve();
+        else this.video.addEventListener('loadedmetadata', () => resolve(), { once: true });
+      });
       await this.video.play();
     } catch (error) {
       this.stop();
@@ -37,9 +41,9 @@ export class CameraController {
   }
 
   draw(): void {
-    if (!this.video.videoWidth || !this.video.videoHeight) return;
     const context = this.canvas.getContext('2d');
     if (!context) return;
+    if (!this.isReady()) { context.clearRect(0, 0, this.canvas.width, this.canvas.height); return; }
     const { width, height } = this.canvas;
     const scale = Math.max(width / this.video.videoWidth, height / this.video.videoHeight);
     const drawWidth = this.video.videoWidth * scale;
@@ -50,6 +54,10 @@ export class CameraController {
     context.scale(-1, 1);
     context.drawImage(this.video, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
     context.restore();
+  }
+
+  isReady(): boolean {
+    return this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && this.video.videoWidth > 0 && this.video.videoHeight > 0 && Boolean(this.video.srcObject);
   }
 
   resize(): void {
