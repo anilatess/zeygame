@@ -48,6 +48,8 @@ Her oyuncunun kendi ekran yarısında buz küpleri oluşur. İşaret parmağı u
 
 İkinci oyun **Çömelme Yarışı**dır. Oyun geçişinde yalnızca Pose Landmarker yüklenir ve iki vücut sol/sağ bölgeye ayrılır. Kalça-diz-ayak bileği açısı 110 derecenin altına indiğinde çömelme başlar; 160 derecenin üzerine çıktığında bir puan tamamlanır. Basit hareket yumuşatma uygulanır ve aynı çömelme ikinci kez sayılmaz.
 
+Üçüncü oyun **Ağız Açma Yarışı**dır. Bu aşamada yalnızca Face Landmarker yüklenir; yüzler sol/sağ bölgeye atanır ve `jawOpen` blendshape değeri 0.6 üzerine çıktığında oyuncu bir puan alır. Ağız kapanmadan tekrar puan verilmez. `mouthSmileLeft`, `mouthSmileRight`, `eyeBlinkLeft` ve `eyeBlinkRight` değerleri de oyuncu yüz verisinde saklanır. Yüz algılanmazsa oyun devam eder.
+
 ## İki oyunculu kalibrasyon
 
 Kamera ve model başladıktan sonra kısa bir kalibrasyon ekranı açılır. Görüntünün sol yarısı Oyuncu 1, sağ yarısı Oyuncu 2 olarak ayrılır. Bilek landmarkının aynalanmış x konumuna göre eller oyunculara atanır; iki tarafta da en az bir el algılanmadan kalibrasyon tamamlanmaz. Oyuncu 1 mavi, Oyuncu 2 pembe çizilir ve ortadaki dikey çizgi bölgeleri gösterir. İki el algılandığında kalibrasyon ekranı kapanır ve kamera/landmark çizimleri devam eder.

@@ -6,6 +6,8 @@ import { GameManager } from './game-manager';
 import { IceBreaker } from './games/ice-breaker';
 import { PoseTracker } from './pose-tracker';
 import { SquatRace } from './games/squat-race';
+import { FaceTracker } from './face-tracker';
+import { MouthOpenRace } from './games/mouth-open-race';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Uygulama kökü bulunamadı.');
@@ -35,9 +37,12 @@ const camera = new CameraController(video, canvas);
 const handTracker = new HandTracker();
 const playerTracker = new PlayerTracker();
 const poseTracker = new PoseTracker();
-const gameManager = new GameManager([new IceBreaker(), new SquatRace()]);
+const faceTracker = new FaceTracker();
+const gameManager = new GameManager([new IceBreaker(), new SquatRace(), new MouthOpenRace()]);
 let poseLoading = false;
 let poseReady = false;
+let faceLoading = false;
+let faceReady = false;
 let animationFrame = 0;
 let previousTime = performance.now();
 
@@ -50,6 +55,9 @@ const render = () => {
   if (gameManager.getTrackingType() === 'pose' && !poseLoading && !poseReady) { poseLoading = true; status.textContent = 'Vücut takip modeli yükleniyor…'; void poseTracker.load().then(() => { poseReady = true; }).catch((e) => { status.textContent = e instanceof Error ? e.message : 'Pose modeli yüklenemedi.'; }).finally(() => { poseLoading = false; }); }
   const poses = gameManager.getTrackingType() === 'pose' ? poseTracker.detect(video) : [{ pose: null, detected: false }, { pose: null, detected: false }];
   players[0].pose = poses[0]; players[1].pose = poses[1];
+  if (gameManager.getTrackingType() === 'face' && !faceLoading && !faceReady) { faceLoading = true; status.textContent = 'Yüz takip modeli yükleniyor…'; void faceTracker.load().then(() => { faceReady = true; }).catch((e) => { status.textContent = e instanceof Error ? e.message : 'Yüz modeli yüklenemedi.'; }).finally(() => { faceLoading = false; }); }
+  const faces = gameManager.getTrackingType() === 'face' ? faceTracker.detect(video) : [{ face: null, blend: {}, detected: false }, { face: null, blend: {}, detected: false }];
+  players[0].face = faces[0]; players[1].face = faces[1];
   playerTracker.drawRegions(canvas);
   gameManager.update(deltaTime, players, canvas.width, canvas.height);
   if (gameManager.getState() === 'CALIBRATION') {
@@ -61,6 +69,7 @@ const render = () => {
   const context = canvas.getContext('2d');
   if (context) gameManager.draw(context);
   if (context && gameManager.getTrackingType() === 'pose') poseTracker.draw(context, poses);
+  if (context && gameManager.getTrackingType() === 'face') faceTracker.draw(context, faces);
   playerTracker.drawLandmarks(canvas, players);
   animationFrame = requestAnimationFrame(render);
 };
@@ -82,4 +91,4 @@ startButton.addEventListener('click', async () => {
 
 window.addEventListener('resize', () => camera.resize());
 window.addEventListener('orientationchange', () => camera.resize());
-window.addEventListener('beforeunload', () => { cancelAnimationFrame(animationFrame); handTracker.close(); poseTracker.close(); camera.stop(); });
+window.addEventListener('beforeunload', () => { cancelAnimationFrame(animationFrame); handTracker.close(); poseTracker.close(); faceTracker.close(); camera.stop(); });

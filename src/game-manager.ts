@@ -10,7 +10,7 @@ export class GameManager {
   private index = 0;
   constructor(private readonly games: MiniGame[]) {}
   private get miniGame(): MiniGame { return this.games[this.index]; }
-  getTrackingType(): 'hands' | 'pose' { return this.miniGame.tracking; }
+  getTrackingType(): 'hands' | 'pose' | 'face' { return this.miniGame.tracking; }
 
   getState(): GameState { return this.state; }
   getCountdown(): number { return Math.ceil(this.countdown); }

@@ -11,8 +11,8 @@ const CONNECTIONS: ReadonlyArray<readonly [number, number]> = [
 export class PlayerTracker {
   classify(hands: HandLandmark[][]): PlayersTracking {
     const players: PlayersTracking = [
-      { hands: [], pose: null, detected: false },
-      { hands: [], pose: null, detected: false },
+      { hands: [], pose: null, face: { face: null, blend: {}, detected: false }, detected: false },
+      { hands: [], pose: null, face: { face: null, blend: {}, detected: false }, detected: false },
     ];
     for (const hand of hands) {
       const wrist = hand[0];
