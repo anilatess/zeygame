@@ -31,7 +31,7 @@ Telefonu sabit tutun, iyi ışık kullanın; Oyuncu 1 solda, Oyuncu 2 sağda dur
 
 ## GitHub Pages yayınlama
 
-Build scriptindeki `vite build --base=./` ayarı ve göreli PWA yolları GitHub Pages alt yolları için hazırlanmıştır. `npm.cmd run build` sonrasında `dist/` klasörünü Pages kaynağı olarak yayınlayın. Kamera ve PWA özellikleri için HTTPS gerekir.
+Repository adı `zeygame` olduğu için `vite.config.ts` içinde `base: '/zeygame/'` kullanılır. `npm.cmd run build` sonrasında `dist/` klasörünü Pages kaynağı olarak yayınlayın. Kamera ve PWA özellikleri için HTTPS gerekir.
 
 ### GitHub Actions ile otomatik yayınlama
 
