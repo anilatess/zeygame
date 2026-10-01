@@ -50,6 +50,12 @@ Her oyuncunun kendi ekran yarısında buz küpleri oluşur. İşaret parmağı u
 
 Üçüncü oyun **Ağız Açma Yarışı**dır. Bu aşamada yalnızca Face Landmarker yüklenir; yüzler sol/sağ bölgeye atanır ve `jawOpen` blendshape değeri 0.6 üzerine çıktığında oyuncu bir puan alır. Ağız kapanmadan tekrar puan verilmez. `mouthSmileLeft`, `mouthSmileRight`, `eyeBlinkLeft` ve `eyeBlinkRight` değerleri de oyuncu yüz verisinde saklanır. Yüz algılanmazsa oyun devam eder.
 
+## Menü ve oyun akışı
+
+Ana menüden oyun başlatılabilir, mini oyunların açıklamaları görülebilir veya nasıl oynanacağı okunabilir. Kalibrasyondan sonra her oyun için kısa geri sayım ve oyun talimatı/başlığı gösterilir. Oyunlar arasında skor, kazanan ve sonraki oyuna geçiş sayacı bulunan sonuç ekranı vardır. Tüm oyunların sonunda toplam skor ve genel kazanan gösterilir; **Tekrar Oyna** tüm skorları sıfırlar, **Ana Menüye Dön** oyun döngüsünü durdurur.
+
+Arayüz telefon dikey/yatay yönleri ve laptop ekranları için responsive tasarlanmıştır. Kamera görüntüsü hazır değilse siyah ekran yerine açıklayıcı mesaj gösterilir; model yüklemelerinde yükleme durumu kullanıcıya bildirilir.
+
 ## İki oyunculu kalibrasyon
 
 Kamera ve model başladıktan sonra kısa bir kalibrasyon ekranı açılır. Görüntünün sol yarısı Oyuncu 1, sağ yarısı Oyuncu 2 olarak ayrılır. Bilek landmarkının aynalanmış x konumuna göre eller oyunculara atanır; iki tarafta da en az bir el algılanmadan kalibrasyon tamamlanmaz. Oyuncu 1 mavi, Oyuncu 2 pembe çizilir ve ortadaki dikey çizgi bölgeleri gösterir. İki el algılandığında kalibrasyon ekranı kapanır ve kamera/landmark çizimleri devam eder.

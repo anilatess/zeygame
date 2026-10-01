@@ -6,6 +6,7 @@ export class GameManager {
   private elapsed = 0;
   private resultTime = 0;
   private lastScores: [number, number] = [0, 0];
+  private totals: [number, number] = [0, 0];
 
   private index = 0;
   constructor(private readonly games: MiniGame[]) {}
@@ -16,6 +17,10 @@ export class GameManager {
   getCountdown(): number { return Math.ceil(this.countdown); }
   getRemainingTime(): number { return Math.max(0, Math.ceil(20 - this.elapsed)); }
   getScores(): [number, number] { return [...this.lastScores]; }
+  getTotals(): [number, number] { return [...this.totals]; }
+  getGameName(): string { return ['Buz Kırma', 'Çömelme Yarışı', 'Ağız Açma Yarışı'][this.index] ?? 'Mini Oyun'; }
+  getResultCountdown(): number { return Math.max(0, Math.ceil(3 - this.resultTime)); }
+  reset(): void { this.state = 'MENU'; this.index = 0; this.elapsed = 0; this.resultTime = 0; this.lastScores = [0, 0]; this.totals = [0, 0]; }
 
   enterCalibration(): void { this.state = 'CALIBRATION'; }
 
@@ -38,6 +43,7 @@ export class GameManager {
       this.miniGame.update(deltaTime, players);
       if (this.elapsed >= 20) {
         this.lastScores = this.miniGame.getScores();
+        this.totals[0] += this.lastScores[0]; this.totals[1] += this.lastScores[1];
         this.state = 'RESULT';
         this.resultTime = 0;
       }
@@ -67,10 +73,12 @@ export class GameManager {
     if (this.state === 'RESULT' || this.state === 'FINAL') {
       const [one, two] = this.lastScores;
       const title = one === two ? 'Berabere!' : one > two ? 'Oyuncu 1 kazandı!' : 'Oyuncu 2 kazandı!';
-      context.fillText('Buz Kırma Sonucu', context.canvas.width / 2, context.canvas.height * 0.4);
+      context.fillText(`${this.getGameName()} Sonucu`, context.canvas.width / 2, context.canvas.height * 0.4);
       context.font = `700 ${Math.max(16, context.canvas.width / 38)}px system-ui`;
       context.fillText(`Oyuncu 1: ${one}  -  Oyuncu 2: ${two}`, context.canvas.width / 2, context.canvas.height * 0.5);
       context.fillText(title, context.canvas.width / 2, context.canvas.height * 0.6);
+      if (this.state === 'RESULT' && this.index < this.games.length - 1) context.fillText(`Sonraki oyun: ${this.getResultCountdown()}`, context.canvas.width / 2, context.canvas.height * 0.72);
+      if (this.state === 'FINAL') { context.fillText(`Toplam skor: ${this.totals[0]} - ${this.totals[1]}`, context.canvas.width / 2, context.canvas.height * 0.72); }
     }
     context.restore();
   }
