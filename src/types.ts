@@ -9,6 +9,8 @@ export interface HandLandmark {
   x: number;
   y: number;
   z: number;
+  visibility?: number;
+  presence?: number;
 }
 
 export type NormalizedLandmark = HandLandmark;
