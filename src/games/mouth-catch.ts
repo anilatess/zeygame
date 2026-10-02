@@ -83,14 +83,6 @@ export class MouthCatch implements MiniGame {
   }
   draw(context: CanvasRenderingContext2D): void {
     context.save();
-    context.textAlign = 'center';
-    context.fillStyle = '#fff';
-    context.font = `700 ${Math.max(14, this.width / 42)}px system-ui`;
-    context.fillText(
-      'Ağzını aç ve yiyecekleri yakala!',
-      this.width / 2,
-      Math.max(28, this.height * 0.13),
-    );
     for (const food of this.foods) {
       context.save();
       context.translate(food.x, food.y);

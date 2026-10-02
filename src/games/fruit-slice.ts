@@ -82,14 +82,6 @@ export class FruitSlice implements MiniGame {
   }
   draw(context: CanvasRenderingContext2D): void {
     context.save();
-    context.textAlign = 'center';
-    context.font = `700 ${Math.max(14, this.width / 42)}px system-ui`;
-    context.fillStyle = '#fff';
-    context.fillText(
-      'Meyveleri kes, bombalara dokunma!',
-      this.width / 2,
-      Math.max(28, this.height * 0.13),
-    );
     for (const fruit of this.fruits) {
       context.save();
       context.translate(fruit.x, fruit.y);
@@ -119,7 +111,6 @@ export class FruitSlice implements MiniGame {
       }
       context.restore();
     }
-    context.restore();
     for (const particle of this.particles) {
       context.globalAlpha = Math.max(0, particle.life * 4);
       context.fillStyle = particle.color;
@@ -127,7 +118,7 @@ export class FruitSlice implements MiniGame {
       context.arc(particle.x, particle.y, 4, 0, Math.PI * 2);
       context.fill();
     }
-    context.globalAlpha = 1;
+    context.restore();
   }
   getScores(): [number, number] {
     return [...this.scores];

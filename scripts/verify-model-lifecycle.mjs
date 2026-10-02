@@ -178,6 +178,9 @@ function element() {
     textContent: '',
     dataset: {},
     handlers: {},
+    focus() {
+      this.focused = true;
+    },
     addEventListener(event, handler) {
       this.handlers[event] = handler;
     },
@@ -304,6 +307,7 @@ await click('home');
 assert.equal(cameraStops, 1);
 assert.equal(frames.size, 0);
 assert.equal(query('.game').hidden, true);
+assert.equal(buttons.start.focused, true, 'Home restores focus to the enabled start button');
 assert.equal(tracks.hands.state, 'idle');
 await click('start');
 assert.equal(pending.hands.length, 3);

@@ -1,10 +1,10 @@
+import { drawInstruction, drawSimilarity, panel, canvasTheme } from '../canvas-ui';
 import type { MiniGame, PlayersTracking } from '../types';
 import { audio } from '../audio';
 
 type FeatureRange = readonly [min: number, max: number];
 type Expression = { name: string; icon: string; alternatives: Record<string, FeatureRange>[] };
 type Round = { best: number };
-const COLORS = ['#60a5fa', '#f472b6'] as const;
 // Initial thresholds: tune with real-camera testing across players and lighting.
 const EXPRESSION_RANGES = {
   active: [0.6, 1],
@@ -135,40 +135,36 @@ export class FaceMimic implements MiniGame {
   draw(context: CanvasRenderingContext2D): void {
     const expression = EXPRESSIONS[this.round];
     context.save();
-    context.textAlign = 'center';
-    context.fillStyle = '#fff';
-    context.font = `700 ${Math.max(14, this.width / 42)}px system-ui`;
-    context.fillText(
-      `${expression.icon}  Surat Taklidi • ${expression.name}`,
-      this.width / 2,
-      Math.max(28, this.height * 0.11),
-    );
-    context.font = `600 ${Math.max(13, this.width / 48)}px system-ui`;
-    context.fillText(
+    const layout = drawInstruction(
+      context,
+      this.width,
+      this.height,
+      expression.name,
+      '',
       `Tur süresi: ${Math.max(0, Math.ceil(6 - (this.elapsed % 6)))} sn`,
-      this.width / 2,
-      this.height * 0.17,
     );
-    context.font = `700 ${Math.max(34, this.width / 10)}px system-ui`;
-    context.fillText(expression.icon, this.width / 2, this.height * 0.35);
-    this.rounds.forEach((round, index) => {
-      const x = index ? this.width * 0.75 : this.width * 0.25;
-      context.fillStyle = COLORS[index];
-      context.font = `700 ${Math.max(14, this.width / 40)}px system-ui`;
-      context.fillText(
-        `Oyuncu ${index + 1}: ${Math.round(round.best * 100)}% • ${this.scores[index]}`,
-        x,
-        this.height * 0.78,
-      );
-      context.strokeStyle = '#ffffff55';
-      context.strokeRect(x - this.width * 0.16, this.height * 0.83, this.width * 0.32, 12);
-      context.fillRect(
-        x - this.width * 0.16,
-        this.height * 0.83,
-        this.width * 0.32 * round.best,
-        12,
-      );
-    });
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillStyle = canvasTheme().yellow;
+    const size = Math.min(80 * layout.ratio, this.width * 0.2, this.height * 0.18);
+    const y = Math.max(this.height * 0.35, layout.instructionBottom + size * 0.7);
+    panel(
+      context,
+      this.width / 2 - size * 0.7,
+      y - size * 0.6,
+      size * 1.4,
+      size * 1.2,
+      canvasTheme().border,
+      16 * layout.ratio,
+    );
+    context.font = `700 ${size}px system-ui`;
+    context.fillText(expression.icon, this.width / 2, y);
+    drawSimilarity(
+      context,
+      this.width,
+      this.height,
+      this.rounds.map((round) => round.best),
+    );
     context.restore();
   }
   getScores(): [number, number] {

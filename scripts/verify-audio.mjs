@@ -163,6 +163,9 @@ function element() {
     textContent: '',
     dataset: {},
     handlers: {},
+    focus() {
+      this.focused = true;
+    },
     addEventListener(event, handler) {
       this.handlers[event] = handler;
     },
@@ -253,6 +256,7 @@ const click = async (action) => buttons[action].handlers.click();
 await click('start');
 assert.equal(appEnvironment.state.contexts.length, 1, 'start click unlocks shared service');
 await click('replay');
+assert.equal(query('.game').focused, true, 'Replay moves focus away from hidden final buttons');
 assert.equal(appEnvironment.state.contexts.length, 1, 'replay reuses the original context');
 await click('home');
 assert.equal(appEnvironment.state.contexts.length, 1, 'home does not create another context');

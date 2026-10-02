@@ -1,0 +1,470 @@
+[
+  {
+    "size": "landscape",
+    "state": "CALIBRATION",
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      844,
+      390
+    ]
+  },
+  {
+    "size": "landscape",
+    "state": "COUNTDOWN",
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      844,
+      390
+    ]
+  },
+  {
+    "size": "landscape",
+    "state": "RESULT",
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      844,
+      390
+    ]
+  },
+  {
+    "size": "landscape",
+    "state": "FINAL",
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      844,
+      390
+    ]
+  },
+  {
+    "size": "landscape",
+    "game": 0,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      844,
+      390
+    ]
+  },
+  {
+    "size": "landscape",
+    "game": 1,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      844,
+      390
+    ]
+  },
+  {
+    "size": "landscape",
+    "game": 2,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      844,
+      390
+    ]
+  },
+  {
+    "size": "landscape",
+    "game": 3,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      844,
+      390
+    ]
+  },
+  {
+    "size": "landscape",
+    "game": 4,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      844,
+      390
+    ]
+  },
+  {
+    "size": "landscape",
+    "game": 5,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      844,
+      390
+    ]
+  },
+  {
+    "size": "landscape",
+    "game": 6,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      844,
+      390
+    ]
+  },
+  {
+    "size": "landscape",
+    "game": 7,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      844,
+      390
+    ]
+  },
+  {
+    "size": "portrait",
+    "state": "CALIBRATION",
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  {
+    "size": "portrait",
+    "state": "COUNTDOWN",
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  {
+    "size": "portrait",
+    "state": "RESULT",
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  {
+    "size": "portrait",
+    "state": "FINAL",
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  {
+    "size": "portrait",
+    "game": 0,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  {
+    "size": "portrait",
+    "game": 1,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  {
+    "size": "portrait",
+    "game": 2,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  {
+    "size": "portrait",
+    "game": 3,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  {
+    "size": "portrait",
+    "game": 4,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  {
+    "size": "portrait",
+    "game": 5,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  {
+    "size": "portrait",
+    "game": 6,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  {
+    "size": "portrait",
+    "game": 7,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  {
+    "size": "laptop",
+    "state": "CALIBRATION",
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      1440,
+      900
+    ]
+  },
+  {
+    "size": "laptop",
+    "state": "COUNTDOWN",
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      1440,
+      900
+    ]
+  },
+  {
+    "size": "laptop",
+    "state": "RESULT",
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      1440,
+      900
+    ]
+  },
+  {
+    "size": "laptop",
+    "state": "FINAL",
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      1440,
+      900
+    ]
+  },
+  {
+    "size": "laptop",
+    "game": 0,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      1440,
+      900
+    ]
+  },
+  {
+    "size": "laptop",
+    "game": 1,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      1440,
+      900
+    ]
+  },
+  {
+    "size": "laptop",
+    "game": 2,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      1440,
+      900
+    ]
+  },
+  {
+    "size": "laptop",
+    "game": 3,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      1440,
+      900
+    ]
+  },
+  {
+    "size": "laptop",
+    "game": 4,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      1440,
+      900
+    ]
+  },
+  {
+    "size": "laptop",
+    "game": 5,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      1440,
+      900
+    ]
+  },
+  {
+    "size": "laptop",
+    "game": 6,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      1440,
+      900
+    ]
+  },
+  {
+    "size": "laptop",
+    "game": 7,
+    "canvasClipped": [],
+    "canvasHudOverlaps": [],
+    "canvasTextOverlaps": [],
+    "clipped": [],
+    "horizontalOverflow": false,
+    "viewport": [
+      1440,
+      900
+    ]
+  }
+]

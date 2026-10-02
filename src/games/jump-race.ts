@@ -1,3 +1,4 @@
+import { drawInstruction, overlayLayout, panel, canvasTheme } from '../canvas-ui';
 import type { MiniGame, PlayersTracking, NormalizedLandmark } from '../types';
 import { audio } from '../audio';
 
@@ -51,18 +52,22 @@ export class JumpRace implements MiniGame {
   }
 
   draw(context: CanvasRenderingContext2D): void {
+    drawInstruction(context, this.width, this.height, this.description);
+    const { ratio, bottom } = overlayLayout(context, this.width, this.height);
     context.save();
-    context.textAlign = 'center';
-    context.fillStyle = '#ffffff';
-    context.font = `700 ${Math.max(14, this.width / 42)}px system-ui`;
-    context.fillText('En çok zıplayan kazanır!', this.width / 2, Math.max(28, this.height * 0.13));
     this.states.forEach((state, index) => {
-      context.fillStyle = index === 0 ? '#60a5fa' : '#f472b6';
-      context.font = `700 ${Math.max(14, this.width / 38)}px system-ui`;
+      const color = index ? canvasTheme().pink : canvasTheme().blue;
+      const left = (index * this.width) / 2 + 12 * ratio;
+      const width = this.width / 2 - 24 * ratio;
+      panel(context, left, bottom - 42 * ratio, width, 42 * ratio, color, 12 * ratio);
+      context.fillStyle = color;
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.font = `700 ${12 * ratio}px system-ui`;
       context.fillText(
         `Oyuncu ${index + 1}: ${state.label}`,
-        index === 0 ? this.width * 0.25 : this.width * 0.75,
-        this.height * 0.9,
+        left + width / 2,
+        bottom - 21 * ratio,
       );
     });
     context.restore();

@@ -1,24 +1,18 @@
 import './styles.css';
+import { GameUI, gameUiMarkup } from './game-ui';
 import { CameraController } from './camera';
 import { HandTracker } from './hand-tracker';
 import { PlayerTracker } from './player-tracker';
 import { GameManager } from './game-manager';
-import { IceBreaker } from './games/ice-breaker';
+import { createGames } from './games';
 import { PoseTracker } from './pose-tracker';
-import { SquatRace } from './games/squat-race';
 import { FaceTracker } from './face-tracker';
-import { MouthOpenRace } from './games/mouth-open-race';
-import { FruitSlice } from './games/fruit-slice';
-import { JumpRace } from './games/jump-race';
-import { DanceMimic } from './games/dance-mimic';
-import { FaceMimic } from './games/face-mimic';
-import { MouthCatch } from './games/mouth-catch';
 import { audio } from './audio';
 import type { PlayerFace, PlayerPose, PlayersTracking } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Uygulama kökü bulunamadı.');
-app.innerHTML = `<section class="app"><div class="menu-card"><header class="menu-top"><span class="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</span><span class="game-count"></span></header><div class="menu-home"><div class="hero-copy"><h1>Zey<span>Game</span><i aria-hidden="true">✦</i></h1><h2>Kamera açık, <br>rekabet başlasın!</h2><p>Yan yana gelin, hareketlerinizle yarışın.</p><div class="menu-actions"><button class="primary" data-action="start">Partiyi Başlat ↗</button><button data-action="games">Oyunları Keşfet</button><button data-action="howto">Nasıl Oynanır?</button></div><p class="status" role="alert" aria-live="polite"></p></div><div class="party-art"><div class="art-caption">AYNI KAMERA. İKİ RAKİP.</div><div class="players"><div class="player blue"><div class="avatar" aria-hidden="true"><span></span></div><strong>Oyuncu 1</strong><small>Sol tarafta</small></div><span class="versus" aria-hidden="true">VS</span><div class="player pink"><div class="avatar" aria-hidden="true"><span></span></div><strong>Oyuncu 2</strong><small>Sağ tarafta</small></div></div><div class="art-footer">✦ Hareket sende, parti burada!</div></div></div><section class="info-panel" hidden aria-labelledby="info-title"><button data-action="back">← Ana Menü</button><div class="info-content"></div></section><footer class="menu-footer">2 oyuncu <span>•</span> 1 kamera <span>•</span> Bol rekabet</footer></div></section><section class="game" hidden><video autoplay muted playsinline></video><canvas></canvas><div class="camera-message" hidden></div><div class="model-message" hidden><p role="status" aria-live="polite"></p><button data-action="retry" hidden>Tekrar Dene</button><button data-action="home">Ana Menüye Dön</button></div><div class="calibration" hidden><div class="calibration-card"><div class="eyebrow">Kalibrasyon</div><h2>Oyuncular yerleşsin</h2><p>Oyuncu 1 sol tarafta durmalı</p><p>Oyuncu 2 sağ tarafta durmalı</p><p>İki oyuncunun elleri algılanmalı</p><p class="calibration-status"></p></div></div><div class="final-actions" hidden><button data-action="replay">Tekrar Oyna</button><button data-action="home">Ana Menüye Dön</button></div></section>`;
+app.innerHTML = `<section class="app"><div class="menu-card"><header class="menu-top"><span class="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</span><span class="game-count"></span></header><div class="menu-home"><div class="hero-copy"><h1>Zey<span>Game</span><i aria-hidden="true">✦</i></h1><h2>Kamera açık, <br>rekabet başlasın!</h2><p>Yan yana gelin, hareketlerinizle yarışın.</p><div class="menu-actions"><button class="primary" data-action="start">Partiyi Başlat ↗</button><button data-action="games">Oyunları Keşfet</button><button data-action="howto">Nasıl Oynanır?</button></div><p class="status" role="alert" aria-live="polite"></p></div><div class="party-art"><div class="art-caption">AYNI KAMERA. İKİ RAKİP.</div><div class="players"><div class="player blue"><div class="avatar" aria-hidden="true"><span></span></div><strong>Oyuncu 1</strong><small>Sol tarafta</small></div><span class="versus" aria-hidden="true">VS</span><div class="player pink"><div class="avatar" aria-hidden="true"><span></span></div><strong>Oyuncu 2</strong><small>Sağ tarafta</small></div></div><div class="art-footer">✦ Hareket sende, parti burada!</div></div></div><section class="info-panel" hidden aria-labelledby="info-title"><button data-action="back">← Ana Menü</button><div class="info-content"></div></section><footer class="menu-footer">2 oyuncu <span>•</span> 1 kamera <span>•</span> Bol rekabet</footer></div></section><section class="game" tabindex="-1" hidden><video autoplay muted playsinline></video><canvas></canvas><div class="camera-message" hidden></div><div class="model-message" hidden><p role="status" aria-live="polite"></p><button data-action="retry" hidden>Tekrar Dene</button><button data-action="home">Ana Menüye Dön</button></div>${gameUiMarkup}</section>`;
 app.innerHTML +=
   '<div class="update-notice" role="status" aria-live="polite" hidden><span>Yeni sürüm hazır — Yenile</span><button data-action="update">Yenile</button></div>';
 
@@ -33,21 +27,13 @@ const video = q<HTMLVideoElement>('video'),
   calibrationStatus = q<HTMLParagraphElement>('.calibration-status');
 const cameraMessage = q<HTMLElement>('.camera-message'),
   finalActions = q<HTMLElement>('.final-actions');
+const gameUI = new GameUI(app);
 const camera = new CameraController(video, canvas),
   handTracker = new HandTracker(),
   playerTracker = new PlayerTracker(),
   poseTracker = new PoseTracker(),
   faceTracker = new FaceTracker();
-const manager = new GameManager([
-  new IceBreaker(),
-  new SquatRace(),
-  new MouthOpenRace(),
-  new FruitSlice(),
-  new JumpRace(),
-  new DanceMimic(),
-  new FaceMimic(),
-  new MouthCatch(),
-]);
+const manager = new GameManager(createGames());
 q<HTMLElement>('.game-count').textContent = `${manager.getGames().length} mini oyun`;
 const trackers = { hands: handTracker, pose: poseTracker, face: faceTracker };
 const modelMessage = q<HTMLElement>('.model-message');
@@ -97,6 +83,7 @@ function stopSession(): void {
   faceTracker.close();
   previousTrackingType = null;
   manager.reset();
+  gameUI.reset();
   modelMessage.hidden = true;
 }
 
@@ -181,6 +168,7 @@ const render = () => {
   previous = now;
   const rect = camera.draw();
   if (!rect) {
+    gameUI.reset();
     cameraMessage.hidden = false;
     cameraMessage.textContent = 'Kamera görüntüsü hazırlanıyor…';
     frame = requestAnimationFrame(render);
@@ -220,7 +208,7 @@ const render = () => {
   manager.update(dt, players, canvas.width, canvas.height, rect, modelReady);
   if (manager.getState() === 'CALIBRATION' && modelReady) {
     calibration.hidden = false;
-    calibrationStatus.textContent =
+    const calibrationText =
       !players[0].detected && !players[1].detected
         ? 'İki el de görünür olmalı.'
         : !players[0].detected
@@ -228,14 +216,17 @@ const render = () => {
           : !players[1].detected
             ? 'Oyuncu 2 için sağ tarafta el gösterin.'
             : '';
+    if (calibrationStatus.textContent !== calibrationText)
+      calibrationStatus.textContent = calibrationText;
   } else calibration.hidden = true;
+  gameUI.render(manager, players, requiredTracker().state === 'ready');
   const context = canvas.getContext('2d');
   if (context) {
-    manager.draw(context);
     if (activeDetectionType === 'pose') poseTracker.draw(context, poses, rect);
     if (activeDetectionType === 'face') faceTracker.draw(context, faces, rect);
   }
   playerTracker.drawLandmarks(canvas, players, rect);
+  if (context && (!needsModel || modelReady)) manager.draw(context);
   finalActions.hidden = manager.getState() !== 'FINAL';
   frame = requestAnimationFrame(render);
 };
@@ -256,6 +247,7 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
       game.hidden = true;
       intro.hidden = false;
       q<HTMLButtonElement>('[data-action="start"]').disabled = false;
+      q<HTMLButtonElement>('[data-action="start"]').focus();
       return;
     }
     if (action === 'retry') {
@@ -272,6 +264,8 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
       manager.reset();
       finalActions.hidden = true;
       manager.enterCalibration();
+      gameUI.reset();
+      game.focus();
       previous = performance.now();
       return;
     }
@@ -285,6 +279,7 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
       if (currentSession !== session) return;
       intro.hidden = true;
       game.hidden = false;
+      game.focus();
       manager.reset();
       manager.enterCalibration();
       camera.resize();

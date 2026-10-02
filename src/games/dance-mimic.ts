@@ -1,3 +1,4 @@
+import { drawInstruction, drawSimilarity, canvasTheme } from '../canvas-ui';
 import type { MiniGame, NormalizedLandmark, PlayersTracking } from '../types';
 import type { VideoRect } from '../coordinate-mapper';
 import { audio } from '../audio';
@@ -19,7 +20,6 @@ const ARM_FALLOFF = 30;
 const STRAIGHT_RANGE: AngleRange = [160, 180];
 const BENT_RANGE: AngleRange = [70, 110];
 const JOINT_FALLOFF = 30;
-const COLORS = ['#60a5fa', '#f472b6'] as const;
 const JOINTS = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28] as const;
 const LINKS = [
   [11, 12],
@@ -219,52 +219,39 @@ export class DanceMimic implements MiniGame {
     const targetIndex = Math.min(this.round, ROUND_COUNT - 1);
     const target = DANCE_TARGETS[targetIndex];
     context.save();
-    context.textAlign = 'center';
-    context.fillStyle = '#fff';
-    context.font = `700 ${Math.max(14, this.width / 42)}px system-ui`;
-    context.fillText(
-      `Dans Taklidi • ${target.name}`,
-      this.width / 2,
-      Math.max(28, this.height * 0.11),
-    );
-    context.font = `600 ${Math.max(13, this.width / 48)}px system-ui`;
-    context.fillText(
+    const layout = drawInstruction(
+      context,
+      this.width,
+      this.height,
+      target.name,
+      target.instruction,
       `Tur süresi: ${Math.max(0, Math.ceil(ROUND_SECONDS - (this.elapsed % ROUND_SECONDS)))} sn`,
-      this.width / 2,
-      this.height * 0.17,
     );
-    context.font = `600 ${Math.max(12, this.width / 65)}px system-ui`;
-    context.fillText(target.instruction, this.width / 2, this.height * 0.23);
+    context.textAlign = 'center';
     const skeleton = danceTargetLandmarks(targetIndex);
-    const scale = Math.min(this.width * 0.16, this.height * 0.21);
-    context.strokeStyle = '#ffffffcc';
+    const minY = Math.min(...JOINTS.map((joint) => skeleton[joint].y));
+    const maxY = Math.max(...JOINTS.map((joint) => skeleton[joint].y));
+    const ceiling = layout.instructionBottom + 8 * layout.ratio;
+    const floor = layout.bottom - 60 * layout.ratio;
+    const scale = Math.min(
+      this.width * 0.16,
+      this.height * 0.21,
+      (floor - ceiling) / (maxY - minY),
+    );
+    const targetY = Math.max(
+      ceiling - minY * scale,
+      Math.min(this.height * 0.43, floor - maxY * scale),
+    );
+    context.strokeStyle = canvasTheme().yellow;
     context.lineWidth = Math.max(2, this.width / 360);
     for (const [a, b] of LINKS) {
       context.beginPath();
       // Mirror the reference like the live camera: anatomical left is screen left.
-      context.moveTo(
-        this.width / 2 - skeleton[a].x * scale,
-        this.height * 0.43 + skeleton[a].y * scale,
-      );
-      context.lineTo(
-        this.width / 2 - skeleton[b].x * scale,
-        this.height * 0.43 + skeleton[b].y * scale,
-      );
+      context.moveTo(this.width / 2 - skeleton[a].x * scale, targetY + skeleton[a].y * scale);
+      context.lineTo(this.width / 2 - skeleton[b].x * scale, targetY + skeleton[b].y * scale);
       context.stroke();
     }
-    context.font = `600 ${Math.max(13, this.width / 48)}px system-ui`;
-    this.best.forEach((best, i) => {
-      const x = i ? this.width * 0.75 : this.width * 0.25;
-      context.fillStyle = COLORS[i];
-      context.fillText(
-        `Oyuncu ${i + 1}: ${Math.round(best * 100)}% • ${this.scores[i]}`,
-        x,
-        this.height * 0.84,
-      );
-      context.strokeStyle = '#ffffff55';
-      context.strokeRect(x - this.width * 0.16, this.height * 0.87, this.width * 0.32, 12);
-      context.fillRect(x - this.width * 0.16, this.height * 0.87, this.width * 0.32 * best, 12);
-    });
+    drawSimilarity(context, this.width, this.height, this.best);
     context.restore();
   }
   getScores(): [number, number] {

@@ -56,6 +56,9 @@ function element() {
     textContent: '',
     dataset: {},
     handlers: {},
+    focus() {
+      this.focused = true;
+    },
     addEventListener(event, handler) {
       this.handlers[event] = handler;
     },
@@ -280,6 +283,7 @@ for (const state of ['MENU', 'RESULT', 'FINAL']) {
   await frame();
   assert.deepEqual(detectCalls, { hands: 0, pose: 0, face: 0 }, `${state} does not detect`);
 }
+assert.equal(query('#result-title').focused, true, 'Final focuses the result title');
 
 forceState('PLAYING', 0);
 tracks.hands.close();
