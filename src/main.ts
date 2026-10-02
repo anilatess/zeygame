@@ -47,10 +47,8 @@ const manager = new GameManager([
 ]);
 let poseReady = false,
   poseLoading = false,
-  poseFailed = false,
   faceReady = false,
   faceLoading = false,
-  faceFailed = false,
   frame = 0,
   previous = performance.now();
 
@@ -80,7 +78,7 @@ const render = () => {
     return;
   }
   cameraMessage.hidden = true;
-  const players = playerTracker.classify(handTracker.detectAndDraw(video, canvas));
+  const players = playerTracker.classify(handTracker.detect(video));
   const type = manager.getTrackingType();
   if (type === 'pose' && !poseReady && !poseLoading) {
     poseLoading = true;

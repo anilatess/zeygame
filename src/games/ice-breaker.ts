@@ -26,7 +26,6 @@ export class IceBreaker implements MiniGame {
   private scores: [number, number] = [0, 0];
   private spawnTimer = 0;
   private hitClock = 0;
-  private audioContext: AudioContext | null = null;
 
   start(width: number, height: number): void {
     this.width = width;
@@ -116,23 +115,5 @@ export class IceBreaker implements MiniGame {
 
   private isInside(cube: IceCube, x: number, y: number): boolean {
     return Math.abs(x - cube.x) <= cube.size / 2 && Math.abs(y - cube.y) <= cube.size / 2;
-  }
-
-  private playTone(frequency: number, duration: number): void {
-    try {
-      this.audioContext ??= new AudioContext();
-      if (this.audioContext.state === 'suspended') void this.audioContext.resume();
-      const oscillator = this.audioContext.createOscillator();
-      const gain = this.audioContext.createGain();
-      oscillator.frequency.value = frequency;
-      oscillator.type = 'sine';
-      gain.gain.setValueAtTime(0.04, this.audioContext.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
-      oscillator.connect(gain).connect(this.audioContext.destination);
-      oscillator.start();
-      oscillator.stop(this.audioContext.currentTime + duration);
-    } catch {
-      /* Ses desteği yoksa oyun devam eder. */
-    }
   }
 }

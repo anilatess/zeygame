@@ -118,7 +118,7 @@ for (const [width, height, dw, dh, ox, x, y] of cases) {
   for (const Game of [IceBreaker, FruitSlice, MouthCatch]) {
     const game = new Game();
     game.start(width, height);
-    game.playTone = game.beep = () => {};
+    game.beep = () => {};
     const ice = { x, y, size: 2, hits: 0, age: 0, owner: 0, lastHit: -Infinity };
     game.cubes = [ice];
     game.fruits = [{ x, y, radius: 2, vx: 0, vy: 0, owner: 0, age: 0, sliced: false, bomb: false }];
