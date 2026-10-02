@@ -17,7 +17,7 @@ import { audio } from './audio';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Uygulama kökü bulunamadı.');
-app.innerHTML = `<section class="app"><div class="card menu-card"><div class="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</div><h1>Hazır mısınız?</h1><p>Hareketlerinizi kullanarak üç mini oyunda yarışın.</p><p class="status" role="alert" aria-live="polite"></p><div class="menu-actions"><button data-action="start">Oyunu Başlat</button><button data-action="games">Oyunları Göster</button><button data-action="howto">Nasıl Oynanır?</button></div><div class="info-panel" hidden></div></div></section><section class="game" hidden><video autoplay muted playsinline></video><canvas></canvas><div class="camera-message" hidden></div><div class="calibration" hidden><div class="calibration-card"><div class="eyebrow">Kalibrasyon</div><h2>Oyuncular yerleşsin</h2><p>Oyuncu 1 sol tarafta durmalı</p><p>Oyuncu 2 sağ tarafta durmalı</p><p>İki oyuncunun elleri algılanmalı</p><p class="calibration-status"></p></div></div><div class="final-actions" hidden><button data-action="replay">Tekrar Oyna</button><button data-action="home">Ana Menüye Dön</button></div></section>`;
+app.innerHTML = `<section class="app"><div class="card menu-card"><div class="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</div><h1>Hazır mısınız?</h1><p>Hareketlerinizi kullanarak üç mini oyunda yarışın.</p><p class="status" role="alert" aria-live="polite"></p><div class="menu-actions"><button data-action="start">Oyunu Başlat</button><button data-action="games">Oyunları Göster</button><button data-action="howto">Nasıl Oynanır?</button></div><div class="info-panel" hidden></div></div></section><section class="game" hidden><video autoplay muted playsinline></video><canvas></canvas><div class="camera-message" hidden></div><div class="model-message" hidden><p role="status" aria-live="polite"></p><button data-action="retry" hidden>Tekrar Dene</button><button data-action="home">Ana Menüye Dön</button></div><div class="calibration" hidden><div class="calibration-card"><div class="eyebrow">Kalibrasyon</div><h2>Oyuncular yerleşsin</h2><p>Oyuncu 1 sol tarafta durmalı</p><p>Oyuncu 2 sağ tarafta durmalı</p><p>İki oyuncunun elleri algılanmalı</p><p class="calibration-status"></p></div></div><div class="final-actions" hidden><button data-action="replay">Tekrar Oyna</button><button data-action="home">Ana Menüye Dön</button></div></section>`;
 
 const q = <T extends Element>(s: string) => app.querySelector<T>(s)!;
 const intro = q<HTMLElement>('.app'),
@@ -45,12 +45,28 @@ const manager = new GameManager([
   new FaceMimic(),
   new MouthCatch(),
 ]);
-let poseReady = false,
-  poseLoading = false,
-  faceReady = false,
-  faceLoading = false,
-  frame = 0,
-  previous = performance.now();
+const trackers = { hands: handTracker, pose: poseTracker, face: faceTracker };
+const modelMessage = q<HTMLElement>('.model-message');
+const modelStatus = q<HTMLElement>('.model-message p');
+const retryButton = q<HTMLButtonElement>('[data-action="retry"]');
+let frame = 0,
+  previous = performance.now(),
+  session = 0;
+
+function requiredTracker() {
+  return trackers[manager.getState() === 'CALIBRATION' ? 'hands' : manager.getTrackingType()];
+}
+
+function stopSession(): void {
+  session++;
+  cancelAnimationFrame(frame);
+  camera.stop();
+  handTracker.close();
+  poseTracker.close();
+  faceTracker.close();
+  manager.reset();
+  modelMessage.hidden = true;
+}
 
 function showInfo(kind: 'games' | 'howto'): void {
   info.hidden = false;
@@ -80,36 +96,15 @@ const render = () => {
   cameraMessage.hidden = true;
   const players = playerTracker.classify(handTracker.detect(video));
   const type = manager.getTrackingType();
-  if (type === 'pose' && !poseReady && !poseLoading) {
-    poseLoading = true;
-    setLoading('Vücut modeli yükleniyor…');
-    void poseTracker
-      .load()
-      .then(() => {
-        poseReady = true;
-      })
-      .catch((e) => {
-        status.textContent = e instanceof Error ? e.message : 'Vücut modeli yüklenemedi.';
-      })
-      .finally(() => {
-        poseLoading = false;
-      });
-  }
-  if (type === 'face' && !faceReady && !faceLoading) {
-    faceLoading = true;
-    setLoading('Yüz modeli yükleniyor…');
-    void faceTracker
-      .load()
-      .then(() => {
-        faceReady = true;
-      })
-      .catch((e) => {
-        status.textContent = e instanceof Error ? e.message : 'Yüz modeli yüklenemedi.';
-      })
-      .finally(() => {
-        faceLoading = false;
-      });
-  }
+  const tracker = requiredTracker();
+  const needsModel = ['CALIBRATION', 'COUNTDOWN', 'PLAYING'].includes(manager.getState());
+  if (needsModel && tracker.state === 'idle') void tracker.load();
+  const modelReady = tracker.state === 'ready';
+  modelMessage.hidden = !needsModel || modelReady;
+  modelStatus.textContent =
+    tracker.state === 'failed' ? tracker.errorMessage : 'Takip modeli yükleniyor…';
+  retryButton.hidden = tracker.state !== 'failed';
+  retryButton.disabled = tracker.state !== 'failed';
   const poses =
     type === 'pose'
       ? poseTracker.detect(video)
@@ -129,8 +124,8 @@ const render = () => {
   players[0].face = faces[0];
   players[1].face = faces[1];
   playerTracker.drawRegions(canvas);
-  manager.update(dt, players, canvas.width, canvas.height, rect);
-  if (manager.getState() === 'CALIBRATION') {
+  manager.update(dt, players, canvas.width, canvas.height, rect, modelReady);
+  if (manager.getState() === 'CALIBRATION' && modelReady) {
     calibration.hidden = false;
     calibrationStatus.textContent =
       !players[0].detected && !players[1].detected
@@ -157,18 +152,19 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
     const action = button.dataset.action;
     if (action === 'games' || action === 'howto') return showInfo(action);
     if (action === 'home') {
-      cancelAnimationFrame(frame);
-      camera.stop();
-      handTracker.close();
-      poseTracker.close();
-      faceTracker.close();
-      poseReady = false;
-      faceReady = false;
-      manager.reset();
+      stopSession();
       finalActions.hidden = true;
       game.hidden = true;
       intro.hidden = false;
       q<HTMLButtonElement>('[data-action="start"]').disabled = false;
+      return;
+    }
+    if (action === 'retry') {
+      const tracker = requiredTracker();
+      if (tracker.state === 'failed') {
+        retryButton.disabled = true;
+        void tracker.retry();
+      }
       return;
     }
     if (action === 'replay') {
@@ -180,12 +176,12 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
     }
     if (action !== 'start') return;
     button.disabled = true;
+    const currentSession = ++session;
     audio.unlock();
     setLoading('Kamera izni bekleniyor…');
     try {
       await camera.start();
-      setLoading('El takip modeli yükleniyor…');
-      await handTracker.load();
+      if (currentSession !== session) return;
       intro.hidden = true;
       game.hidden = false;
       manager.reset();
@@ -195,6 +191,7 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
       cancelAnimationFrame(frame);
       render();
     } catch (e) {
+      if (currentSession !== session) return;
       status.textContent =
         e instanceof Object && 'message' in e
           ? String(e.message)
@@ -205,13 +202,7 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
 );
 window.addEventListener('resize', () => camera.resize());
 window.addEventListener('orientationchange', () => camera.resize());
-window.addEventListener('beforeunload', () => {
-  cancelAnimationFrame(frame);
-  handTracker.close();
-  poseTracker.close();
-  faceTracker.close();
-  camera.stop();
-});
+window.addEventListener('beforeunload', stopSession);
 if ('serviceWorker' in navigator)
   window.addEventListener('load', () => {
     void navigator.serviceWorker.register('./sw.js');

@@ -163,7 +163,7 @@ const main = fs.readFileSync(path.join(root, 'src/main.ts'), 'utf8');
 for (const wiring of [
   'const rect = camera.draw()',
   'if (!rect)',
-  'manager.update(dt, players, canvas.width, canvas.height, rect)',
+  'manager.update(dt, players, canvas.width, canvas.height, rect, modelReady)',
   'poseTracker.draw(context, poses, rect)',
   'faceTracker.draw(context, faces, rect)',
   'playerTracker.drawLandmarks(canvas, players, rect)',

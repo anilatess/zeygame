@@ -1,4 +1,5 @@
-import type { HandLandmark, HandTrackingError } from './types';
+import { ModelLifecycle, type ModelLoader } from './model-lifecycle';
+import type { HandLandmark } from './types';
 
 const TASKS_VISION_CDN =
   'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs';
@@ -22,18 +23,23 @@ interface VisionModule {
   };
 }
 
-export class HandTracker {
-  private landmarker: HandLandmarkerInstance | null = null;
+export class HandTracker extends ModelLifecycle<HandLandmarkerInstance> {
+  constructor(loader: ModelLoader<HandLandmarkerInstance> = HandTracker.createModel) {
+    super(
+      loader,
+      'El takip modeli yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.',
+    );
+  }
   private lastVideoTime = -1;
   private lastLandmarks: HandLandmark[][] = [];
 
-  async load(): Promise<void> {
+  private static async createModel(): Promise<HandLandmarkerInstance> {
     try {
       // The CDN module is intentionally loaded only after the user starts the game.
       // @ts-ignore MediaPipe is loaded from a pinned CDN URL at runtime.
       const vision = (await import(/* @vite-ignore */ TASKS_VISION_CDN)) as VisionModule;
       const fileset = await vision.FilesetResolver.forVisionTasks(WASM_CDN);
-      this.landmarker = await vision.HandLandmarker.createFromOptions(fileset, {
+      return await vision.HandLandmarker.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: HAND_MODEL_URL },
         runningMode: 'VIDEO',
         numHands: 2,
@@ -42,31 +48,25 @@ export class HandTracker {
         minTrackingConfidence: 0.5,
       });
     } catch {
-      throw this.createError(
-        'model',
+      throw new Error(
         'El takip modeli yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.',
       );
     }
   }
 
   detect(video: HTMLVideoElement): HandLandmark[][] {
-    if (!this.landmarker || !video.videoWidth) return this.lastLandmarks;
+    if (!this.model || !video.videoWidth) return this.lastLandmarks;
     if (video.currentTime === this.lastVideoTime) return this.lastLandmarks;
     this.lastVideoTime = video.currentTime;
 
-    const result = this.landmarker.detectForVideo(video, performance.now());
+    const result = this.model.detectForVideo(video, performance.now());
     this.lastLandmarks = result.landmarks ?? [];
     return this.lastLandmarks;
   }
 
   close(): void {
-    this.landmarker?.close();
-    this.landmarker = null;
+    super.close();
     this.lastVideoTime = -1;
     this.lastLandmarks = [];
-  }
-
-  private createError(status: HandTrackingError['status'], message: string): HandTrackingError {
-    return { status, message };
   }
 }

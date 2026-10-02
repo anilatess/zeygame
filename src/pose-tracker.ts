@@ -1,3 +1,4 @@
+import { ModelLifecycle, type ModelLoader } from './model-lifecycle';
 import type { NormalizedLandmark, PlayerPose } from './types';
 import { toCanvasPoint, type VideoRect } from './coordinate-mapper';
 
@@ -27,19 +28,24 @@ interface Vision {
   PoseLandmarker: { createFromOptions(v: unknown, o: unknown): Promise<PoseInstance> };
 }
 
-export class PoseTracker {
-  private model: PoseInstance | null = null;
+export class PoseTracker extends ModelLifecycle<PoseInstance> {
+  constructor(loader: ModelLoader<PoseInstance> = PoseTracker.createModel) {
+    super(
+      loader,
+      'Vücut takip modeli yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.',
+    );
+  }
   private last = -1;
   private poses: PlayerPose[] = [
     { pose: null, detected: false },
     { pose: null, detected: false },
   ];
-  async load(): Promise<void> {
+  private static async createModel(): Promise<PoseInstance> {
     try {
       // @ts-ignore CDN runtime module
       const vision = (await import(/* @vite-ignore */ URL)) as Vision;
       const fileset = await vision.FilesetResolver.forVisionTasks(WASM);
-      this.model = await vision.PoseLandmarker.createFromOptions(fileset, {
+      return await vision.PoseLandmarker.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: MODEL },
         runningMode: 'VIDEO',
         numPoses: 2,
@@ -92,8 +98,12 @@ export class PoseTracker {
     });
   }
   close(): void {
-    this.model?.close();
-    this.model = null;
+    super.close();
+    this.last = -1;
+    this.poses = [
+      { pose: null, detected: false },
+      { pose: null, detected: false },
+    ];
   }
   private smooth(
     previous: NormalizedLandmark[] | null,

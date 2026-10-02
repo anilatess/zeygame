@@ -14,7 +14,7 @@ function load(relative) {
   vm.runInNewContext(outputText, {
     exports,
     performance,
-    require: () => load('../src/coordinate-mapper.ts'),
+    require: (specifier) => load(new URL(specifier + '.ts', url).href),
   });
   return exports;
 }

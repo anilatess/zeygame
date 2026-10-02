@@ -144,6 +144,18 @@ video {
   background: #020617;
   font-size: clamp(1rem, 4vw, 1.4rem);
 }
+.model-message {
+  position: absolute;
+  z-index: 4;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(90%, 480px);
+  padding: 16px;
+  text-align: center;
+  background: #111827dd;
+  border-radius: 16px;
+}
 .final-actions {
   position: absolute;
   z-index: 3;

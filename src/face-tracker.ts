@@ -1,3 +1,4 @@
+import { ModelLifecycle, type ModelLoader } from './model-lifecycle';
 import { toCanvasPoint, type VideoRect } from './coordinate-mapper';
 import type { NormalizedLandmark, PlayerFace } from './types';
 const URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs';
@@ -16,16 +17,21 @@ interface Vision {
   FilesetResolver: { forVisionTasks(p: string): Promise<unknown> };
   FaceLandmarker: { createFromOptions(v: unknown, o: unknown): Promise<FaceModel> };
 }
-export class FaceTracker {
-  private model: FaceModel | null = null;
+export class FaceTracker extends ModelLifecycle<FaceModel> {
+  constructor(loader: ModelLoader<FaceModel> = FaceTracker.createModel) {
+    super(
+      loader,
+      'Yüz takip modeli yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.',
+    );
+  }
   private last = -1;
   private faces: PlayerFace[] = [this.empty(), this.empty()];
-  async load(): Promise<void> {
+  private static async createModel(): Promise<FaceModel> {
     try {
       // @ts-ignore CDN runtime module
       const vision = (await import(/* @vite-ignore */ URL)) as Vision;
       const fileset = await vision.FilesetResolver.forVisionTasks(WASM);
-      this.model = await vision.FaceLandmarker.createFromOptions(fileset, {
+      return await vision.FaceLandmarker.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: MODEL },
         runningMode: 'VIDEO',
         numFaces: 2,
@@ -66,8 +72,9 @@ export class FaceTracker {
     });
   }
   close(): void {
-    this.model?.close();
-    this.model = null;
+    super.close();
+    this.last = -1;
+    this.faces = [this.empty(), this.empty()];
   }
   private empty(): PlayerFace {
     return { face: null, blend: {}, detected: false };

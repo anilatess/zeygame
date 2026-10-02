@@ -8,6 +8,7 @@ export class GameManager {
   private elapsed = 0;
   private resultTime = 0;
   private index = 0;
+  private waitingForModel = false;
   private lastScores: [number, number] = [0, 0];
   private totals: [number, number] = [0, 0];
   constructor(private readonly games: MiniGame[]) {}
@@ -43,6 +44,7 @@ export class GameManager {
   }
   reset(): void {
     this.state = 'MENU';
+    this.waitingForModel = false;
     this.index = 0;
     this.elapsed = 0;
     this.resultTime = 0;
@@ -58,7 +60,18 @@ export class GameManager {
     width: number,
     height: number,
     rect: VideoRect,
+    modelReady = true,
   ): void {
+    if (['CALIBRATION', 'COUNTDOWN', 'PLAYING'].includes(this.state)) {
+      if (!modelReady) {
+        this.waitingForModel = true;
+        return;
+      }
+      if (this.waitingForModel) {
+        dt = 0;
+        this.waitingForModel = false;
+      }
+    }
     if (this.state === 'CALIBRATION' && players[0].detected && players[1].detected) {
       this.state = 'COUNTDOWN';
       this.countdown = 3;
