@@ -3,6 +3,8 @@ import { getCoverRect, type VideoRect } from './coordinate-mapper';
 
 export class CameraController {
   private stream: MediaStream | null = null;
+  private generation = 0;
+  private cancelMetadata: (() => void) | null = null;
 
   constructor(
     private readonly video: HTMLVideoElement,
@@ -14,9 +16,10 @@ export class CameraController {
       throw this.createError('error', 'Tarayıcınız kamera erişimini desteklemiyor.');
     }
 
+    this.stop();
+    const generation = this.generation;
     try {
-      this.stop();
-      this.stream = await navigator.mediaDevices.getUserMedia({
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'user',
           width: { ideal: 1280, max: 1280 },
@@ -25,15 +28,30 @@ export class CameraController {
         },
         audio: false,
       });
+      if (generation !== this.generation) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      this.stream = stream;
       this.video.srcObject = this.stream;
       this.video.muted = true;
       this.video.playsInline = true;
       await new Promise<void>((resolve) => {
         if (this.video.readyState >= HTMLMediaElement.HAVE_METADATA) resolve();
-        else this.video.addEventListener('loadedmetadata', () => resolve(), { once: true });
+        else {
+          const done = () => {
+            this.video.removeEventListener('loadedmetadata', done);
+            if (this.cancelMetadata === done) this.cancelMetadata = null;
+            resolve();
+          };
+          this.cancelMetadata = done;
+          this.video.addEventListener('loadedmetadata', done, { once: true });
+        }
       });
+      if (generation !== this.generation) return;
       await this.video.play();
     } catch (error) {
+      if (generation !== this.generation) return;
       this.stop();
       const name = error instanceof DOMException ? error.name : '';
       if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
@@ -88,6 +106,8 @@ export class CameraController {
   }
 
   stop(): void {
+    this.generation++;
+    this.cancelMetadata?.();
     this.stream?.getTracks().forEach((track) => track.stop());
     this.stream = null;
     this.video.srcObject = null;

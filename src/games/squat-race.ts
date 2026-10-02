@@ -8,6 +8,8 @@ export class SquatRace implements MiniGame {
   readonly name = 'Çömelme Yarışı';
   readonly description = 'Önce ayakta dur; ardından çömelip yeniden ayağa kalkarak puan topla.';
   readonly tracking = 'pose' as const;
+  readonly calibrationLandmarks = REQUIRED_LANDMARKS;
+  readonly calibrationInstruction = 'İki tarafta kalça, diz ve ayak bilekleri görünür olsun.';
   private scores: [number, number] = [0, 0];
   private phases: [SquatPhase, SquatPhase] = ['awaiting-standing', 'awaiting-standing'];
   start(): void {

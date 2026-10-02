@@ -183,6 +183,8 @@ export class DanceMimic implements MiniGame {
   ).join(' ');
   readonly tracking = 'pose' as const;
   readonly needs = 'pose' as const;
+  readonly calibrationLandmarks = JOINTS;
+  readonly calibrationInstruction = 'İki tarafta omuz, kol, kalça ve bacaklar görünür olsun.';
   readonly duration = ROUND_SECONDS * ROUND_COUNT;
   private width = 0;
   private height = 0;

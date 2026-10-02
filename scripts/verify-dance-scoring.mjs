@@ -248,6 +248,9 @@ assert.deepEqual(scores(overshoot), [10, 0], 'a frame cannot be reused to fill s
 const manager = new GameManager([new DanceMimic()]);
 manager.enterCalibration();
 manager.update(0, players(fixtures[0]), 1000, 1000, rect);
+assert.equal(manager.getState(), 'CALIBRATION', 'One reliable pose cannot prepare two players');
+manager.update(0, [player(fixtures[0]), player(fixtures[0])], 1000, 1000, rect);
+assert.equal(manager.getState(), 'COUNTDOWN');
 manager.update(3, players(fixtures[0]), 1000, 1000, rect);
 assert.equal(manager.getRemainingTime(), 24);
 for (let round = 0; round < 4; round++)

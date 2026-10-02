@@ -83,7 +83,8 @@ function render() {
   }
   context.restore();
   new PlayerTracker().drawRegions(canvas);
-  controlled.index = index;
+  if (params.has('single')) manager.startSingle(index);
+  controlled.index = params.has('single') ? 0 : index;
   controlled.state = state;
   controlled.countdown = 3;
   controlled.elapsed = 7;
@@ -117,8 +118,6 @@ function render() {
   if (fields.round !== undefined)
     fields.round = Math.max(0, Math.min(3, Number(params.get('target')) || 0));
   ui.render(manager, players, ready);
-  root.querySelector<HTMLElement>('.calibration-status')!.textContent =
-    'Oyuncu 2 için sağ tarafta el gösterin.';
   const model = root.querySelector<HTMLElement>('.model-message')!;
   model.hidden = ready;
   model.querySelector('p')!.textContent = failed

@@ -9,6 +9,8 @@ export class JumpRace implements MiniGame {
   readonly description = 'Zıplayarak puan topla.';
   readonly tracking = 'pose' as const;
   readonly needs = 'pose' as const;
+  readonly calibrationLandmarks = [23, 24] as const;
+  readonly calibrationInstruction = 'İki tarafta kalçalar görünür olsun. Dik durun.';
   private width = 0;
   private height = 0;
   private scores: [number, number] = [0, 0];

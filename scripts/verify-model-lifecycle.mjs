@@ -178,6 +178,9 @@ function element() {
     textContent: '',
     dataset: {},
     handlers: {},
+    querySelectorAll() {
+      return [];
+    },
     focus() {
       this.focused = true;
     },
@@ -186,7 +189,7 @@ function element() {
     },
   };
 }
-const actions = ['start', 'games', 'howto', 'retry', 'home', 'replay'];
+const actions = ['start', 'select', 'games', 'howto', 'retry', 'home', 'replay', 'choose-another'];
 const buttons = Object.fromEntries(
   actions.map((action) => {
     const node = element();

@@ -1,6 +1,9 @@
 import type { VideoRect } from './coordinate-mapper';
 import type { GameState, MiniGame, PlayersTracking } from './types';
 import { audio } from './audio';
+import { calibrationReadiness } from './calibration';
+
+type Session = { mode: 'party' | 'single'; games: readonly MiniGame[] };
 
 export class GameManager {
   private state: GameState = 'MENU';
@@ -11,12 +14,36 @@ export class GameManager {
   private waitingForModel = false;
   private lastScores: [number, number] = [0, 0];
   private totals: [number, number] = [0, 0];
-  constructor(private readonly games: MiniGame[]) {}
+  private activeSession: Session;
+  constructor(private readonly games: MiniGame[]) {
+    this.activeSession = { mode: 'party', games };
+  }
   private get miniGame(): MiniGame {
-    return this.games[this.index];
+    return this.activeSession.games[this.index];
   }
   getGames(): readonly MiniGame[] {
     return this.games;
+  }
+  getSession(): Readonly<Session> {
+    return this.activeSession;
+  }
+  startParty(): void {
+    this.activeSession = { mode: 'party', games: this.games };
+    this.reset();
+  }
+  startSingle(index: number): void {
+    if (!Number.isInteger(index) || index < 0 || index >= this.games.length)
+      throw new Error('Geçersiz oyun seçimi.');
+    this.activeSession = { mode: 'single', games: [this.games[index]] };
+    this.reset();
+  }
+  getCalibrationReadiness(
+    players: PlayersTracking,
+    width?: number,
+    height?: number,
+    rect?: VideoRect,
+  ): [boolean, boolean] {
+    return calibrationReadiness(this.miniGame, players, width, height, rect);
   }
   getTrackingType(): 'hands' | 'pose' | 'face' {
     return this.miniGame.needs ?? this.miniGame.tracking;
@@ -46,7 +73,7 @@ export class GameManager {
     return this.miniGame.getScores();
   }
   hasNextGame(): boolean {
-    return this.index < this.games.length - 1;
+    return this.index < this.activeSession.games.length - 1;
   }
   getResultCountdown(): number {
     return Math.max(0, Math.ceil(3 - this.resultTime));
@@ -81,7 +108,11 @@ export class GameManager {
         this.waitingForModel = false;
       }
     }
-    if (this.state === 'CALIBRATION' && players[0].detected && players[1].detected) {
+    const ready =
+      this.state === 'CALIBRATION'
+        ? this.getCalibrationReadiness(players, width, height, rect)
+        : [false, false];
+    if (this.state === 'CALIBRATION' && ready[0] && ready[1]) {
       this.state = 'COUNTDOWN';
       this.countdown = 3;
       audio.tone(600, 0.08);
@@ -106,7 +137,7 @@ export class GameManager {
       }
     } else if (this.state === 'RESULT') {
       this.resultTime += dt;
-      if (this.resultTime >= 3 && this.index < this.games.length - 1) {
+      if (this.resultTime >= 3 && this.hasNextGame()) {
         this.index++;
         this.state = 'COUNTDOWN';
         this.countdown = 3;

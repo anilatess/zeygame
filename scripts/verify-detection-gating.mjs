@@ -56,6 +56,9 @@ function element() {
     textContent: '',
     dataset: {},
     handlers: {},
+    querySelectorAll() {
+      return [];
+    },
     focus() {
       this.focused = true;
     },
@@ -66,7 +69,7 @@ function element() {
 }
 
 const elements = new Map();
-const actions = ['start', 'games', 'howto', 'retry', 'home', 'replay'];
+const actions = ['start', 'select', 'games', 'howto', 'retry', 'home', 'replay', 'choose-another'];
 const buttons = Object.fromEntries(
   actions.map((action) => {
     const node = element();
@@ -99,22 +102,44 @@ const tracks = {};
 let now = 0;
 let nextFrame = 0;
 let appManager;
+let bothRegions = false;
 
 function handResult() {
-  const hand = Array.from({ length: 21 }, () => ({ x: 0.75, y: 0.5, z: 0 }));
-  return { landmarks: [hand] };
+  const hand = Array.from({ length: 21 }, () => ({
+    x: 0.75,
+    y: 0.5,
+    z: 0,
+    visibility: 0.95,
+    presence: 0.95,
+  }));
+  return { landmarks: bothRegions ? [hand, hand.map((point) => ({ ...point, x: 0.25 }))] : [hand] };
 }
 
 function poseResult() {
-  const pose = Array.from({ length: 33 }, () => ({ x: 0.75, y: 0.5, z: 0 }));
-  pose[11] = { x: 0.75, y: 0.3, z: 0 };
-  pose[23] = { x: 0.75, y: 0.5, z: 0 };
-  return { landmarks: [pose] };
+  const pose = Array.from({ length: 33 }, () => ({
+    x: 0.75,
+    y: 0.5,
+    z: 0,
+    visibility: 0.95,
+    presence: 0.95,
+  }));
+  pose[11] = { x: 0.75, y: 0.3, z: 0, visibility: 0.95, presence: 0.95 };
+  pose[23] = { x: 0.75, y: 0.5, z: 0, visibility: 0.95, presence: 0.95 };
+  return { landmarks: bothRegions ? [pose, pose.map((point) => ({ ...point, x: 0.25 }))] : [pose] };
 }
 
 function faceResult() {
-  const face = Array.from({ length: 16 }, () => ({ x: 0.75, y: 0.5, z: 0 }));
-  return { faceLandmarks: [face], faceBlendshapes: [{ categories: [] }] };
+  const face = Array.from({ length: 16 }, () => ({
+    x: 0.75,
+    y: 0.5,
+    z: 0,
+    visibility: 0.95,
+    presence: 0.95,
+  }));
+  return {
+    faceLandmarks: bothRegions ? [face, face.map((point) => ({ ...point, x: 0.25 }))] : [face],
+    faceBlendshapes: [{ categories: [] }],
+  };
 }
 
 function fakeModel(type) {
@@ -250,6 +275,26 @@ assert.equal(detectCalls.hands, 2, 'New frame is processed by active hand tracke
 const games = appManager.getGames();
 for (let index = 0; index < games.length; index++) {
   const expected = appManager.games[index].needs ?? appManager.games[index].tracking;
+  bothRegions = false;
+  forceState('CALIBRATION', index);
+  resetCounts();
+  await frame();
+  if (tracks[expected].state === 'loading') {
+    assert.equal(appManager.getState(), 'CALIBRATION', 'Loading cannot finish preparation');
+    await readyRequest(expected);
+  }
+  await frame();
+  assert.equal(appManager.getState(), 'CALIBRATION', games[index].name + ' needs both regions');
+  assert.ok(detectCalls[expected] > 0, games[index].name + ' calibration uses metadata model');
+  for (const type of ['hands', 'pose', 'face'].filter((type) => type !== expected))
+    assert.equal(detectCalls[type], 0, games[index].name + ' preparation does not use ' + type);
+  bothRegions = true;
+  await frame();
+  assert.equal(
+    appManager.getState(),
+    'COUNTDOWN',
+    games[index].name + ' appropriate data permits countdown',
+  );
   forceState('COUNTDOWN', index);
   resetCounts();
   await frame();

@@ -163,6 +163,9 @@ function element() {
     textContent: '',
     dataset: {},
     handlers: {},
+    querySelectorAll() {
+      return [];
+    },
     focus() {
       this.focused = true;
     },
@@ -172,11 +175,13 @@ function element() {
   };
 }
 const buttons = Object.fromEntries(
-  ['start', 'games', 'howto', 'retry', 'home', 'replay'].map((action) => {
-    const button = element();
-    button.dataset.action = action;
-    return [action, button];
-  }),
+  ['start', 'select', 'games', 'howto', 'retry', 'home', 'replay', 'choose-another'].map(
+    (action) => {
+      const button = element();
+      button.dataset.action = action;
+      return [action, button];
+    },
+  ),
 );
 function query(selector) {
   const action = selector.match(/data-action="(.*?)"/);

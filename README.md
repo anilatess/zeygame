@@ -32,6 +32,8 @@ node scripts/verify-service-worker.mjs
 node scripts/verify-pose-reliability.mjs
 node scripts/verify-dance-scoring.mjs
 node scripts/verify-ice-contacts.mjs
+node scripts/verify-game-ui.mjs
+node scripts/verify-game-selection.mjs
 git diff --check
 ```
 
@@ -39,7 +41,17 @@ Bu betikler kamera, gerçek cihaz sesi veya yayınlanmış siteyi doğrulamaz. S
 
 ## Kamera izinleri
 
-Kamera erişimi yalnızca **Oyunu Başlat** düğmesine basıldığında istenir. İzin reddedilirse veya kamera bulunamazsa Türkçe hata gösterilir. Kamera için localhost veya HTTPS gerekir.
+Kamera erişimi yalnızca **Partiyi Başlat** veya **Bu Oyunu Oyna** düğmesine basıldığında istenir. Oyun seçimi ekranını açmak kamera veya ses başlatmaz. İzin reddedilirse veya kamera bulunamazsa Türkçe hata gösterilir. Kamera için localhost veya HTTPS gerekir.
+
+## Parti ve tek oyun modları
+
+**Partiyi Başlat**, ortak oyun listesindeki sekiz oyunu sırayla oynatır ve finalde toplam puanları gösterir. **Oyun Seç**, aynı listedeki sekiz karttan birini **Bu Oyunu Oyna** ile iki kişilik tek oyun oturumu olarak başlatır. Süreler ve puanlama her iki modda aynıdır; tek oyunculu mod yoktur.
+
+Tek oyun sonucunda yalnızca seçilen oyunun adı, iki skor ve kazanan/beraberlik gösterilir. **Aynı Oyunu Tekrar Oyna**, aynı oyun için hazırlığı ve skorları yeniden başlatır. **Başka Oyun Seç** ve **Ana Menüye Dön**, kamera, algılama modelleri, render döngüsü ve ses kaynaklarını kapatır. Sonradan parti başlatmak sekiz oyun sırasını geri getirir. Oturum modu ve sırası tek GameManager içinde tutulur.
+
+Hazırlık kontrolü aktif oyunun takip türünü kullanır: her iki bölgede el veya yüz; vücut oyunlarında güvenilir ve kadrajda görünen gerekli eklemler. Çömelme kalça/diz/ayak bileklerini, Zıplama iki kalçayı, Dans omuz/kol/kalça/bacak noktalarını ister. Bu kontrol algılanma hazırlığıdır, kişi kimliği doğrulaması değildir. Model hazır olmadan hazırlık veya geri sayım ilerlemez.
+
+Oyun seçimi test kapsamı, Chrome ekran görüntüleri ve gerçek cihazda bekleyen kontroller [oyun seçimi doğrulama raporunda](docs/game-selection-validation.md) bulunur. Tek oyun finalinin görsel kontrolü sahte verili geliştirme sayfasındadır; gerçek kamera testi değildir.
 
 ## Oyunlar
 
@@ -56,13 +68,13 @@ Oyunlar aşağıdaki sırayla oynanır. Tablo mevcut kod davranışını açıkl
 | Surat Taklidi    | Yüz   | Büyük gülümseme, Şaşkın yüz, Bir gözünü kapat, diğerini açık tut ve Öpücük ifadesi sırayla taklit edilir. Dört 6 saniyelik turun en iyi benzerliği puana çevrilir. Nötr yüz ve geçersiz özellikler sentetik testlerle kontrol edilmiştir.                                                            |
 | Ağızla Yakala    | Yüz   | Burun landmarkından yaklaşık ağız konumu üretilir; `jawOpen >= 0.6` iken yiyecek yakalanır. Normal 1, altın 2 puan; bomba 2 puan düşürür, skor sıfırın altına inmez.                                                                                                                                 |
 
-Oyunlar arasında sonuç, son oyunda final ekranı gösterilir. Dans Taklidi ve Surat Taklidi 24 saniye, diğer oyunlar varsayılan 20 saniye sürer. Menüdeki sayı, **Oyunları Göster** listesi ve **Nasıl Oynanır** içindeki oyun açıklamaları mevcut oyun yöneticisinin listesinden üretilir. Dans ve yüz hedefleri kendi metadata'sından açıklamalara aktarılır; statik HTML meta açıklaması oyun sayısı içermez.
+Oyunlar arasında sonuç, son oyunda final ekranı gösterilir. Dans Taklidi ve Surat Taklidi 24 saniye, diğer oyunlar varsayılan 20 saniye sürer. Menüdeki sayı, **Oyunları Keşfet** ve **Oyun Seç** listesi ekranlarındaki oyun açıklamaları mevcut oyun yöneticisinin listesinden üretilir. Dans ve yüz hedefleri kendi metadata'sından açıklamalara aktarılır; statik HTML meta açıklaması oyun sayısı içermez.
 
 ## Model yükleme ve ses
 
-Kalibrasyonda el modeli, geri sayım ve oyun sırasında yalnızca aktif oyunun el/vücut/yüz modeli algılama yapar. Pasif modellerin önceki algılama sonuçları temizlenir; yüklenmiş model örnekleri menüye dönülene kadar tutulabilir. Modeller ihtiyaç olduğunda yüklenir ve aynı yükleme isteği paylaşılır. Yükleme sırasında kamera görüntüsü devam eder; kalibrasyon, geri sayım ve oyun süresi model hazır olana kadar ilerlemez. Hata sonrası otomatik tekrar döngüsü yoktur; **Tekrar Dene** düğmesi gerekli modeli yeniden yükler. Menüye dönüş eski yükleme sonuçlarını geçersiz kılar ve modelleri kapatır. Bu akış mevcut model yaşam döngüsü ve algılama betikleriyle doğrulanmıştır; gerçek CDN arızası/cihaz testi ayrıca gerekir.
+Kalibrasyon, geri sayım ve oyun sırasında yalnızca aktif oyunun el/vücut/yüz modeli algılama yapar. Pasif modellerin önceki algılama sonuçları temizlenir; yüklenmiş model örnekleri menüye dönülene kadar tutulabilir. Modeller ihtiyaç olduğunda yüklenir ve aynı yükleme isteği paylaşılır. Yükleme sırasında kamera görüntüsü devam eder; kalibrasyon, geri sayım ve oyun süresi model hazır olana kadar ilerlemez. Hata sonrası otomatik tekrar döngüsü yoktur; **Tekrar Dene** düğmesi gerekli modeli yeniden yükler. Menüye dönüş eski yükleme sonuçlarını geçersiz kılar ve modelleri kapatır. Bu akış mevcut model yaşam döngüsü ve algılama betikleriyle doğrulanmıştır; gerçek CDN arızası/cihaz testi ayrıca gerekir.
 
-Ses üreten oyunlar ve oyun yöneticisi ortak `AudioService` kullanır. Ses bağlamı **Oyunu Başlat** veya **Tekrar Oyna** tıklamasıyla açılır/devam ettirilir; ses açılamazsa oyun sessiz devam eder. Menüye dönüş aktif sesleri durdurur. Laptop ve iPhone'da duyulabilir ses henüz bu kontrol kapsamında test edilmemiştir.
+Ses üreten oyunlar ve oyun yöneticisi ortak `AudioService` kullanır. Ses bağlamı **Partiyi Başlat**, **Bu Oyunu Oyna** veya tekrar oynama tıklamasıyla açılır/devam ettirilir; ses açılamazsa oyun sessiz devam eder. Menüye dönüş aktif sesleri durdurur. Laptop ve iPhone'da duyulabilir ses henüz bu kontrol kapsamında test edilmemiştir.
 
 ## Mobil kullanım
 

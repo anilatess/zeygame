@@ -41,6 +41,8 @@ export type MiniGame = {
   tracking: 'hands' | 'pose' | 'face';
   needs?: 'hands' | 'pose' | 'face';
   duration?: number;
+  calibrationLandmarks?: readonly number[];
+  calibrationInstruction?: string;
   start(width: number, height: number): void;
   update(deltaTime: number, players: PlayersTracking, rect: VideoRect): void;
   draw(context: CanvasRenderingContext2D): void;

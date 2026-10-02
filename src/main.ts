@@ -12,7 +12,7 @@ import type { PlayerFace, PlayerPose, PlayersTracking } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Uygulama kökü bulunamadı.');
-app.innerHTML = `<section class="app"><div class="menu-card"><header class="menu-top"><span class="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</span><span class="game-count"></span></header><div class="menu-home"><div class="hero-copy"><h1>Zey<span>Game</span><i aria-hidden="true">✦</i></h1><h2>Kamera açık, <br>rekabet başlasın!</h2><p>Yan yana gelin, hareketlerinizle yarışın.</p><div class="menu-actions"><button class="primary" data-action="start">Partiyi Başlat ↗</button><button data-action="games">Oyunları Keşfet</button><button data-action="howto">Nasıl Oynanır?</button></div><p class="status" role="alert" aria-live="polite"></p></div><div class="party-art"><div class="art-caption">AYNI KAMERA. İKİ RAKİP.</div><div class="players"><div class="player blue"><div class="avatar" aria-hidden="true"><span></span></div><strong>Oyuncu 1</strong><small>Sol tarafta</small></div><span class="versus" aria-hidden="true">VS</span><div class="player pink"><div class="avatar" aria-hidden="true"><span></span></div><strong>Oyuncu 2</strong><small>Sağ tarafta</small></div></div><div class="art-footer">✦ Hareket sende, parti burada!</div></div></div><section class="info-panel" hidden aria-labelledby="info-title"><button data-action="back">← Ana Menü</button><div class="info-content"></div></section><footer class="menu-footer">2 oyuncu <span>•</span> 1 kamera <span>•</span> Bol rekabet</footer></div></section><section class="game" tabindex="-1" hidden><video autoplay muted playsinline></video><canvas></canvas><div class="camera-message" hidden></div><div class="model-message" hidden><p role="status" aria-live="polite"></p><button data-action="retry" hidden>Tekrar Dene</button><button data-action="home">Ana Menüye Dön</button></div>${gameUiMarkup}</section>`;
+app.innerHTML = `<section class="app"><div class="menu-card"><header class="menu-top"><span class="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</span><span class="game-count"></span></header><div class="menu-home"><div class="hero-copy"><h1>Zey<span>Game</span><i aria-hidden="true">✦</i></h1><h2>Kamera açık, <br>rekabet başlasın!</h2><p>Yan yana gelin, hareketlerinizle yarışın.</p><div class="menu-actions"><button class="primary" data-action="start">Partiyi Başlat ↗</button><button data-action="select">Oyun Seç</button><button data-action="games">Oyunları Keşfet</button><button data-action="howto">Nasıl Oynanır?</button></div><p class="status" role="alert" aria-live="polite"></p></div><div class="party-art"><div class="art-caption">AYNI KAMERA. İKİ RAKİP.</div><div class="players"><div class="player blue"><div class="avatar" aria-hidden="true"><span></span></div><strong>Oyuncu 1</strong><small>Sol tarafta</small></div><span class="versus" aria-hidden="true">VS</span><div class="player pink"><div class="avatar" aria-hidden="true"><span></span></div><strong>Oyuncu 2</strong><small>Sağ tarafta</small></div></div><div class="art-footer">✦ Hareket sende, parti burada!</div></div></div><section class="info-panel" hidden aria-labelledby="info-title"><button data-action="back">← Ana Menü</button><div class="info-content"></div></section><footer class="menu-footer">2 oyuncu <span>•</span> 1 kamera <span>•</span> Bol rekabet</footer></div></section><section class="game" tabindex="-1" hidden><video autoplay muted playsinline></video><canvas></canvas><div class="camera-message" hidden></div><div class="model-message" hidden><p role="status" aria-live="polite"></p><button data-action="retry" hidden>Tekrar Dene</button><button data-action="home">Ana Menüye Dön</button></div>${gameUiMarkup}</section>`;
 app.innerHTML +=
   '<div class="update-notice" role="status" aria-live="polite" hidden><span>Yeni sürüm hazır — Yenile</span><button data-action="update">Yenile</button></div>';
 
@@ -22,9 +22,8 @@ const intro = q<HTMLElement>('.app'),
   status = q<HTMLParagraphElement>('.status'),
   info = q<HTMLElement>('.info-panel');
 const video = q<HTMLVideoElement>('video'),
-  canvas = q<HTMLCanvasElement>('canvas'),
-  calibration = q<HTMLElement>('.calibration'),
-  calibrationStatus = q<HTMLParagraphElement>('.calibration-status');
+  canvas = q<HTMLCanvasElement>('canvas');
+
 const cameraMessage = q<HTMLElement>('.camera-message'),
   finalActions = q<HTMLElement>('.final-actions');
 const gameUI = new GameUI(app);
@@ -49,7 +48,7 @@ let frame = 0,
 let previousTrackingType: ReturnType<GameManager['getTrackingType']> | null = null;
 
 function requiredTracker() {
-  return trackers[manager.getState() === 'CALIBRATION' ? 'hands' : manager.getTrackingType()];
+  return trackers[manager.getTrackingType()];
 }
 
 function emptyPose(): PlayerPose {
@@ -75,6 +74,7 @@ function clearDetectionsExcept(type: ReturnType<GameManager['getTrackingType']> 
 
 function stopSession(): void {
   session++;
+  starting = false;
   cancelAnimationFrame(frame);
   audio.stopAll();
   camera.stop();
@@ -87,7 +87,8 @@ function stopSession(): void {
   modelMessage.hidden = true;
 }
 
-let infoTrigger: 'games' | 'howto' = 'games';
+let starting = false;
+let infoTrigger: 'games' | 'howto' | 'select' = 'games';
 const illustrations: Record<string, string> = {
   'Buz Kırma':
     '<path d="m32 20 28-10 28 18-28 12Z M32 20v42l28 22 28-16V28 M60 40v44 M48 28l8 16-10 12 12 12"/>',
@@ -114,23 +115,31 @@ function illustration(name: string): string {
   );
 }
 function closeInfo(): void {
+  if (starting) stopSession();
+  status.textContent = '';
   info.hidden = true;
   q<HTMLElement>('.menu-home').hidden = false;
   q<HTMLButtonElement>('[data-action="' + infoTrigger + '"]').focus();
 }
-function showInfo(kind: 'games' | 'howto'): void {
+function showInfo(kind: 'games' | 'howto' | 'select'): void {
   infoTrigger = kind;
   q<HTMLElement>('.menu-home').hidden = true;
   info.hidden = false;
-  const labels = { hands: 'El hareketleri', pose: 'Vücut hareketleri', face: 'Yüz ifadeleri' };
+  const labels =
+    kind === 'select'
+      ? { hands: 'El', pose: 'Vücut', face: 'Yüz' }
+      : { hands: 'El hareketleri', pose: 'Vücut hareketleri', face: 'Yüz ifadeleri' };
   const content = q<HTMLElement>('.info-content');
-  if (kind === 'games') {
+  if (kind === 'games' || kind === 'select') {
     content.innerHTML =
-      '<div class="section-heading"><div class="eyebrow">PARTİDE NELER VAR?</div><h2 id="info-title" tabindex="-1">Oyunları Keşfet</h2><p>Her tur yeni bir meydan okuma. Hepsi aynı partide!</p></div><div class="game-grid">' +
+      (kind === 'select'
+        ? '<div class="section-heading"><div class="eyebrow">İKİ KİŞİ, TEK MEYDAN OKUMA</div><h2 id="info-title" tabindex="-1">Oyun Seç</h2><p>Bir oyun seçin, yan yana yarışın.</p></div><p class="selection-status" role="alert" aria-live="polite"></p>'
+        : '<div class="section-heading"><div class="eyebrow">PARTİDE NELER VAR?</div><h2 id="info-title" tabindex="-1">Oyunları Keşfet</h2><p>Her tur yeni bir meydan okuma. Hepsi aynı partide!</p></div>') +
+      '<div class="game-grid">' +
       manager
         .getGames()
         .map(
-          (miniGame) =>
+          (miniGame, index) =>
             '<article class="game-card ' +
             miniGame.tracking +
             '"><div class="game-illustration">' +
@@ -141,7 +150,9 @@ function showInfo(kind: 'games' | 'howto'): void {
             miniGame.name +
             '</h3><p>' +
             miniGame.description.split(/(?<=\.)\s/)[0] +
-            '</p></article>',
+            '</p>' +
+            (kind === 'select' ? selectionButton(index) : '') +
+            '</article>',
         )
         .join('') +
       '</div>';
@@ -153,6 +164,14 @@ function showInfo(kind: 'games' | 'howto'): void {
       illustration('Dans Taklidi') +
       '<h3>Hareket et, puanları topla.</h3></article></div><div class="tips"><p>☀ İyi aydınlatılmış bir ortam kullan.</p><p>↔ Vücut oyunları için çevrende yeterli hareket alanı bırak.</p></div>';
   }
+  content
+    .querySelectorAll<HTMLButtonElement>('[data-action="play-selected"]')
+    .forEach((button) =>
+      button.addEventListener(
+        'click',
+        () => void startSession(button, Number(button.dataset.gameIndex)),
+      ),
+    );
   q<HTMLElement>('#info-title').focus();
 }
 window.addEventListener('keydown', (event) => {
@@ -160,6 +179,48 @@ window.addEventListener('keydown', (event) => {
 });
 function setLoading(text: string): void {
   status.textContent = `⏳ ${text}`;
+  const selectionStatus = app!.querySelector<HTMLElement>('.selection-status');
+  if (selectionStatus) selectionStatus.textContent = status.textContent;
+}
+
+function selectionButton(index: number): string {
+  return `<button data-action="play-selected" data-game-index="${index}" aria-label="${manager.getGames()[index].name} — Bu Oyunu Oyna">Bu Oyunu Oyna</button>`;
+}
+
+async function startSession(button: HTMLButtonElement, selectedIndex?: number): Promise<void> {
+  if (starting || button.disabled || manager.getState() !== 'MENU') return;
+  if (selectedIndex === undefined) manager.startParty();
+  else manager.startSingle(selectedIndex);
+  starting = true;
+  button.disabled = true;
+  const currentSession = ++session;
+  audio.unlock();
+  setLoading('Kamera izni bekleniyor…');
+  try {
+    await camera.start();
+    if (currentSession !== session) return;
+    intro.hidden = true;
+    game.hidden = false;
+    game.focus();
+    manager.enterCalibration();
+    camera.resize();
+    previous = performance.now();
+    cancelAnimationFrame(frame);
+    render();
+  } catch (error) {
+    if (currentSession !== session) return;
+    audio.stopAll();
+    const message =
+      error instanceof Object && 'message' in error
+        ? String(error.message)
+        : 'Kamera başlatılamadı. İzinleri kontrol edin.';
+    status.textContent = message;
+    const selectionStatus = app!.querySelector<HTMLElement>('.selection-status');
+    if (selectionStatus) selectionStatus.textContent = message;
+  } finally {
+    button.disabled = false;
+    if (currentSession === session) starting = false;
+  }
 }
 
 const render = () => {
@@ -177,7 +238,7 @@ const render = () => {
   cameraMessage.hidden = true;
   const state = manager.getState();
   const type = manager.getTrackingType();
-  const detectionType = state === 'CALIBRATION' ? 'hands' : type;
+  const detectionType = type;
   const tracker = requiredTracker();
   const needsModel = ['CALIBRATION', 'COUNTDOWN', 'PLAYING'].includes(state);
   if (needsModel && tracker.state === 'idle') void tracker.load();
@@ -206,20 +267,12 @@ const render = () => {
   players[1].face = faces[1];
   playerTracker.drawRegions(canvas);
   manager.update(dt, players, canvas.width, canvas.height, rect, modelReady);
-  if (manager.getState() === 'CALIBRATION' && modelReady) {
-    calibration.hidden = false;
-    const calibrationText =
-      !players[0].detected && !players[1].detected
-        ? 'İki el de görünür olmalı.'
-        : !players[0].detected
-          ? 'Oyuncu 1 için sol tarafta el gösterin.'
-          : !players[1].detected
-            ? 'Oyuncu 2 için sağ tarafta el gösterin.'
-            : '';
-    if (calibrationStatus.textContent !== calibrationText)
-      calibrationStatus.textContent = calibrationText;
-  } else calibration.hidden = true;
-  gameUI.render(manager, players, requiredTracker().state === 'ready');
+  gameUI.render(
+    manager,
+    players,
+    requiredTracker().state === 'ready',
+    manager.getCalibrationReadiness(players, canvas.width, canvas.height, rect),
+  );
   const context = canvas.getContext('2d');
   if (context) {
     if (activeDetectionType === 'pose') poseTracker.draw(context, poses, rect);
@@ -235,19 +288,26 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
   button.addEventListener('click', async () => {
     const action = button.dataset.action;
     if (action === 'back') return closeInfo();
-    if (action === 'games' || action === 'howto') return showInfo(action);
+    if (action === 'games' || action === 'howto' || action === 'select') return showInfo(action);
     if (action === 'update' && waitingWorker) {
       updateRequested = true;
       waitingWorker.postMessage({ type: 'ZEYGAME_ACTIVATE_UPDATE' });
       return;
     }
-    if (action === 'home') {
+    if (action === 'home' || action === 'choose-another') {
+      const selectedIndex = manager.getGames().indexOf(manager.getCurrentGame());
       stopSession();
       finalActions.hidden = true;
       game.hidden = true;
       intro.hidden = false;
       q<HTMLButtonElement>('[data-action="start"]').disabled = false;
-      q<HTMLButtonElement>('[data-action="start"]').focus();
+      info.hidden = true;
+      q<HTMLElement>('.menu-home').hidden = false;
+      status.textContent = '';
+      if (action === 'choose-another') {
+        showInfo('select');
+        q<HTMLButtonElement>('[data-game-index="' + selectedIndex + '"]').focus();
+      } else q<HTMLButtonElement>('[data-action="start"]').focus();
       return;
     }
     if (action === 'retry') {
@@ -269,31 +329,7 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
       previous = performance.now();
       return;
     }
-    if (action !== 'start' || button.disabled) return;
-    button.disabled = true;
-    const currentSession = ++session;
-    audio.unlock();
-    setLoading('Kamera izni bekleniyor…');
-    try {
-      await camera.start();
-      if (currentSession !== session) return;
-      intro.hidden = true;
-      game.hidden = false;
-      game.focus();
-      manager.reset();
-      manager.enterCalibration();
-      camera.resize();
-      previous = performance.now();
-      cancelAnimationFrame(frame);
-      render();
-    } catch (e) {
-      if (currentSession !== session) return;
-      status.textContent =
-        e instanceof Object && 'message' in e
-          ? String(e.message)
-          : 'Kamera başlatılamadı. İzinleri kontrol edin.';
-      button.disabled = false;
-    }
+    if (action === 'start') await startSession(button);
   }),
 );
 window.addEventListener('resize', () => camera.resize());
