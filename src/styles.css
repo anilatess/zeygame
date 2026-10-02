@@ -1125,3 +1125,49 @@ button:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+.debug-panel {
+  position: absolute;
+  z-index: 4;
+  right: max(10px, env(safe-area-inset-right));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  display: grid;
+  gap: 2px;
+  max-width: min(280px, calc(100vw - 20px));
+  padding: 9px 11px;
+  border: 1px solid #60a5fa99;
+  border-radius: 10px;
+  background: #020617d9;
+  color: #dbeafe;
+  font: 600 11px/1.3 ui-monospace, SFMono-Regular, Consolas, monospace;
+  pointer-events: none;
+}
+.debug-panel[hidden] {
+  display: none;
+}
+.debug-panel strong {
+  color: var(--yellow);
+  letter-spacing: 0.08em;
+}
+.solo-test .ready-players {
+  grid-template-columns: 1fr;
+}
+.solo-test .ready-player.player-two,
+.solo-test .hud-player.player-two,
+.solo-test .result-scores .player-two {
+  display: none;
+}
+.solo-test .play-hud {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.solo-test .result-scores {
+  grid-template-columns: minmax(0, 360px);
+  justify-content: center;
+}
+@media (max-width: 600px), (max-height: 560px) {
+  .debug-panel {
+    max-width: 210px;
+    font-size: 9px;
+    opacity: 0.88;
+  }
+}

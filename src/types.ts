@@ -35,6 +35,13 @@ export type PlayersTracking = [PlayerTracking, PlayerTracking];
 
 export type GameState = 'MENU' | 'CALIBRATION' | 'COUNTDOWN' | 'PLAYING' | 'RESULT' | 'FINAL';
 
+export type GameMode = 'party' | 'single' | 'solo-test';
+
+export type GameStartContext = {
+  mode: GameMode;
+  activePlayers: 1 | 2;
+};
+
 export type MiniGame = {
   name: string;
   description: string;
@@ -43,7 +50,7 @@ export type MiniGame = {
   duration?: number;
   calibrationLandmarks?: readonly number[];
   calibrationInstruction?: string;
-  start(width: number, height: number): void;
+  start(width: number, height: number, context?: GameStartContext): void;
   update(deltaTime: number, players: PlayersTracking, rect: VideoRect): void;
   draw(context: CanvasRenderingContext2D): void;
   getScores(): [number, number];

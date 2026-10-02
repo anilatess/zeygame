@@ -1,5 +1,5 @@
 import { toCanvasPoint, type VideoRect } from '../coordinate-mapper';
-import type { MiniGame, PlayersTracking } from '../types';
+import type { GameStartContext, MiniGame, PlayersTracking } from '../types';
 import { audio } from '../audio';
 
 type Fruit = {
@@ -29,20 +29,22 @@ export class FruitSlice implements MiniGame {
   private particles: Particle[] = [];
   private scores: [number, number] = [0, 0];
   private spawn = 0;
+  private solo = false;
 
-  start(width: number, height: number): void {
+  start(width: number, height: number, context?: GameStartContext): void {
     this.width = width;
     this.height = height;
     this.fruits = [];
     this.particles = [];
     this.scores = [0, 0];
     this.spawn = 0;
+    this.solo = context?.activePlayers === 1;
   }
   update(dt: number, players: PlayersTracking, rect: VideoRect): void {
     this.spawn += dt;
     if (this.spawn > 0.7) {
       this.spawn = 0;
-      this.addFruit(Math.random() < 0.5 ? 0 : 1);
+      this.addFruit(this.solo ? 0 : Math.random() < 0.5 ? 0 : 1);
     }
     for (const fruit of this.fruits) {
       fruit.age += dt;
@@ -125,8 +127,16 @@ export class FruitSlice implements MiniGame {
   }
   private addFruit(owner: 0 | 1): void {
     const radius = Math.max(18, Math.min(this.width, this.height) * 0.045);
-    const left = owner === 0 ? this.width * 0.08 : this.width * 0.58;
-    const right = owner === 0 ? this.width * 0.42 : this.width * 0.92;
+    const left = this.solo
+      ? this.width * 0.08
+      : owner === 0
+        ? this.width * 0.08
+        : this.width * 0.58;
+    const right = this.solo
+      ? this.width * 0.92
+      : owner === 0
+        ? this.width * 0.42
+        : this.width * 0.92;
     this.fruits.push({
       owner,
       radius,

@@ -1,5 +1,5 @@
 import { toCanvasPoint, type VideoRect } from '../coordinate-mapper';
-import type { MiniGame, PlayersTracking } from '../types';
+import type { GameStartContext, MiniGame, PlayersTracking } from '../types';
 import { audio } from '../audio';
 
 type Food = {
@@ -27,19 +27,21 @@ export class MouthCatch implements MiniGame {
   private particles: Particle[] = [];
   private scores: [number, number] = [0, 0];
   private spawn = 0;
-  start(width: number, height: number): void {
+  private solo = false;
+  start(width: number, height: number, context?: GameStartContext): void {
     this.width = width;
     this.height = height;
     this.foods = [];
     this.particles = [];
     this.scores = [0, 0];
     this.spawn = 0;
+    this.solo = context?.activePlayers === 1;
   }
   update(dt: number, players: PlayersTracking, rect: VideoRect): void {
     this.spawn += dt;
     if (this.spawn > 0.65) {
       this.spawn = 0;
-      this.addFood(Math.random() < 0.5 ? 0 : 1);
+      this.addFood(this.solo ? 0 : Math.random() < 0.5 ? 0 : 1);
     }
     for (const food of this.foods) food.y += food.speed * dt;
     for (const particle of this.particles) {
@@ -125,8 +127,16 @@ export class MouthCatch implements MiniGame {
   }
   private addFood(owner: 0 | 1): void {
     const size = Math.max(17, Math.min(this.width, this.height) * 0.04);
-    const min = owner === 0 ? this.width * 0.08 : this.width * 0.58;
-    const max = owner === 0 ? this.width * 0.42 : this.width * 0.92;
+    const min = this.solo
+      ? this.width * 0.08
+      : owner === 0
+        ? this.width * 0.08
+        : this.width * 0.58;
+    const max = this.solo
+      ? this.width * 0.92
+      : owner === 0
+        ? this.width * 0.42
+        : this.width * 0.92;
     const roll = Math.random();
     this.foods.push({
       owner,

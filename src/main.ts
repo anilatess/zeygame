@@ -2,7 +2,7 @@ import './styles.css';
 import { GameUI, gameUiMarkup } from './game-ui';
 import { CameraController } from './camera';
 import { HandTracker } from './hand-tracker';
-import { PlayerTracker } from './player-tracker';
+import { PlayerTracker, toSoloPlayers } from './player-tracker';
 import { GameManager } from './game-manager';
 import { createGames } from './games';
 import { PoseTracker } from './pose-tracker';
@@ -12,7 +12,7 @@ import type { PlayerFace, PlayerPose, PlayersTracking } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Uygulama kökü bulunamadı.');
-app.innerHTML = `<section class="app"><div class="menu-card"><header class="menu-top"><span class="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</span><span class="game-count"></span></header><div class="menu-home"><div class="hero-copy"><h1>Zey<span>Game</span><i aria-hidden="true">✦</i></h1><h2>Kamera açık, <br>rekabet başlasın!</h2><p>Yan yana gelin, hareketlerinizle yarışın.</p><div class="menu-actions"><button class="primary" data-action="start">Partiyi Başlat ↗</button><button data-action="select">Oyun Seç</button><button data-action="games">Oyunları Keşfet</button><button data-action="howto">Nasıl Oynanır?</button></div><p class="status" role="alert" aria-live="polite"></p></div><div class="party-art"><div class="art-caption">AYNI KAMERA. İKİ RAKİP.</div><div class="players"><div class="player blue"><div class="avatar" aria-hidden="true"><span></span></div><strong>Oyuncu 1</strong><small>Sol tarafta</small></div><span class="versus" aria-hidden="true">VS</span><div class="player pink"><div class="avatar" aria-hidden="true"><span></span></div><strong>Oyuncu 2</strong><small>Sağ tarafta</small></div></div><div class="art-footer">✦ Hareket sende, parti burada!</div></div></div><section class="info-panel" hidden aria-labelledby="info-title"><button data-action="back">← Ana Menü</button><div class="info-content"></div></section><footer class="menu-footer">2 oyuncu <span>•</span> 1 kamera <span>•</span> Bol rekabet</footer></div></section><section class="game" tabindex="-1" hidden><video autoplay muted playsinline></video><canvas></canvas><div class="camera-message" hidden></div><div class="model-message" hidden><p role="status" aria-live="polite"></p><button data-action="retry" hidden>Tekrar Dene</button><button data-action="home">Ana Menüye Dön</button></div>${gameUiMarkup}</section>`;
+app.innerHTML = `<section class="app"><div class="menu-card"><header class="menu-top"><span class="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</span><span class="game-count"></span></header><div class="menu-home"><div class="hero-copy"><h1>Zey<span>Game</span><i aria-hidden="true">✦</i></h1><h2>Kamera açık, <br>rekabet başlasın!</h2><p>Yan yana gelin, hareketlerinizle yarışın.</p><div class="menu-actions"><button class="primary" data-action="start">Partiyi Başlat ↗</button><button data-action="select">Oyun Seç</button><button data-action="solo-test">Tek Kişilik Test</button><button data-action="games">Oyunları Keşfet</button><button data-action="howto">Nasıl Oynanır?</button></div><p class="status" role="alert" aria-live="polite"></p></div><div class="party-art"><div class="art-caption">AYNI KAMERA. İKİ RAKİP.</div><div class="players"><div class="player blue"><div class="avatar" aria-hidden="true"><span></span></div><strong>Oyuncu 1</strong><small>Sol tarafta</small></div><span class="versus" aria-hidden="true">VS</span><div class="player pink"><div class="avatar" aria-hidden="true"><span></span></div><strong>Oyuncu 2</strong><small>Sağ tarafta</small></div></div><div class="art-footer">✦ Hareket sende, parti burada!</div></div></div><section class="info-panel" hidden aria-labelledby="info-title"><button data-action="back">← Ana Menü</button><div class="info-content"></div></section><footer class="menu-footer">2 oyuncu <span>•</span> 1 kamera <span>•</span> Bol rekabet</footer></div></section><section class="game" tabindex="-1" hidden><video autoplay muted playsinline></video><canvas></canvas><div class="camera-message" hidden></div><div class="model-message" hidden><p role="status" aria-live="polite"></p><button data-action="retry" hidden>Tekrar Dene</button><button data-action="home">Ana Menüye Dön</button></div>${gameUiMarkup}<aside class="debug-panel" hidden aria-label="Solo test debug bilgileri"><strong>SOLO TEST</strong><span data-debug="game"></span><span data-debug="player"></span><span data-debug="model"></span><span data-debug="fps"></span><span data-debug="score"></span><span data-debug="state"></span><span data-debug="camera"></span></aside></section>`;
 app.innerHTML +=
   '<div class="update-notice" role="status" aria-live="polite" hidden><span>Yeni sürüm hazır — Yenile</span><button data-action="update">Yenile</button></div>';
 
@@ -45,6 +45,7 @@ let updateReloaded = false;
 let frame = 0,
   previous = performance.now(),
   session = 0;
+let fps = 0;
 let previousTrackingType: ReturnType<GameManager['getTrackingType']> | null = null;
 
 function requiredTracker() {
@@ -88,7 +89,7 @@ function stopSession(): void {
 }
 
 let starting = false;
-let infoTrigger: 'games' | 'howto' | 'select' = 'games';
+let infoTrigger: 'games' | 'howto' | 'select' | 'solo-test' = 'games';
 const illustrations: Record<string, string> = {
   'Buz Kırma':
     '<path d="m32 20 28-10 28 18-28 12Z M32 20v42l28 22 28-16V28 M60 40v44 M48 28l8 16-10 12 12 12"/>',
@@ -121,18 +122,20 @@ function closeInfo(): void {
   q<HTMLElement>('.menu-home').hidden = false;
   q<HTMLButtonElement>('[data-action="' + infoTrigger + '"]').focus();
 }
-function showInfo(kind: 'games' | 'howto' | 'select'): void {
+function showInfo(kind: 'games' | 'howto' | 'select' | 'solo-test'): void {
   infoTrigger = kind;
   q<HTMLElement>('.menu-home').hidden = true;
   info.hidden = false;
   const labels =
-    kind === 'select'
+    kind === 'select' || kind === 'solo-test'
       ? { hands: 'El', pose: 'Vücut', face: 'Yüz' }
       : { hands: 'El hareketleri', pose: 'Vücut hareketleri', face: 'Yüz ifadeleri' };
   const content = q<HTMLElement>('.info-content');
-  if (kind === 'games' || kind === 'select') {
+  if (kind === 'games' || kind === 'select' || kind === 'solo-test') {
     content.innerHTML =
-      (kind === 'select'
+      (kind === 'solo-test'
+        ? '<div class="section-heading"><div class="eyebrow">GELİŞTİRİCİ MODU</div><h2 id="info-title" tabindex="-1">Tek Kişilik Test</h2><p>Bir mini oyun seç; kamera yalnızca seni Player 1 olarak izlesin.</p></div><p class="selection-status" role="alert" aria-live="polite"></p>'
+        : kind === 'select'
         ? '<div class="section-heading"><div class="eyebrow">İKİ KİŞİ, TEK MEYDAN OKUMA</div><h2 id="info-title" tabindex="-1">Oyun Seç</h2><p>Bir oyun seçin, yan yana yarışın.</p></div><p class="selection-status" role="alert" aria-live="polite"></p>'
         : '<div class="section-heading"><div class="eyebrow">PARTİDE NELER VAR?</div><h2 id="info-title" tabindex="-1">Oyunları Keşfet</h2><p>Her tur yeni bir meydan okuma. Hepsi aynı partide!</p></div>') +
       '<div class="game-grid">' +
@@ -151,7 +154,9 @@ function showInfo(kind: 'games' | 'howto' | 'select'): void {
             '</h3><p>' +
             miniGame.description.split(/(?<=\.)\s/)[0] +
             '</p>' +
-            (kind === 'select' ? selectionButton(index) : '') +
+            (kind === 'select' || kind === 'solo-test'
+              ? selectionButton(index, kind === 'solo-test')
+              : '') +
             '</article>',
         )
         .join('') +
@@ -169,7 +174,12 @@ function showInfo(kind: 'games' | 'howto' | 'select'): void {
     .forEach((button) =>
       button.addEventListener(
         'click',
-        () => void startSession(button, Number(button.dataset.gameIndex)),
+        () =>
+          void startSession(
+            button,
+            Number(button.dataset.gameIndex),
+            button.dataset.solo === 'true',
+          ),
       ),
     );
   q<HTMLElement>('#info-title').focus();
@@ -183,13 +193,19 @@ function setLoading(text: string): void {
   if (selectionStatus) selectionStatus.textContent = status.textContent;
 }
 
-function selectionButton(index: number): string {
-  return `<button data-action="play-selected" data-game-index="${index}" aria-label="${manager.getGames()[index].name} — Bu Oyunu Oyna">Bu Oyunu Oyna</button>`;
+function selectionButton(index: number, solo = false): string {
+  const label = solo ? 'Solo Testi Başlat' : 'Bu Oyunu Oyna';
+  return `<button data-action="play-selected" data-game-index="${index}" data-solo="${solo}" aria-label="${manager.getGames()[index].name} — ${label}">${label}</button>`;
 }
 
-async function startSession(button: HTMLButtonElement, selectedIndex?: number): Promise<void> {
+async function startSession(
+  button: HTMLButtonElement,
+  selectedIndex?: number,
+  solo = false,
+): Promise<void> {
   if (starting || button.disabled || manager.getState() !== 'MENU') return;
   if (selectedIndex === undefined) manager.startParty();
+  else if (solo) manager.startSoloTest(selectedIndex);
   else manager.startSingle(selectedIndex);
   starting = true;
   button.disabled = true;
@@ -201,6 +217,7 @@ async function startSession(button: HTMLButtonElement, selectedIndex?: number): 
     if (currentSession !== session) return;
     intro.hidden = true;
     game.hidden = false;
+    game.classList?.toggle('solo-test', manager.isSoloTest());
     game.focus();
     manager.enterCalibration();
     camera.resize();
@@ -226,6 +243,7 @@ async function startSession(button: HTMLButtonElement, selectedIndex?: number): 
 const render = () => {
   const now = performance.now(),
     dt = Math.min((now - previous) / 1000, 0.1);
+  fps = fps ? fps * 0.9 + (dt > 0 ? 1 / dt : 0) * 0.1 : dt > 0 ? 1 / dt : 0;
   previous = now;
   const rect = camera.draw();
   if (!rect) {
@@ -253,7 +271,7 @@ const render = () => {
     tracker.state === 'failed' ? tracker.errorMessage : 'Takip modeli yükleniyor…';
   retryButton.hidden = tracker.state !== 'failed';
   retryButton.disabled = tracker.state !== 'failed';
-  const players =
+  let players =
     activeDetectionType === 'hands'
       ? playerTracker.classify(handTracker.detect(video))
       : emptyPlayers();
@@ -265,7 +283,8 @@ const render = () => {
     activeDetectionType === 'face' ? faceTracker.detect(video) : [emptyFace(), emptyFace()];
   players[0].face = faces[0];
   players[1].face = faces[1];
-  playerTracker.drawRegions(canvas);
+  if (manager.isSoloTest()) players = toSoloPlayers(players);
+  if (!manager.isSoloTest()) playerTracker.drawRegions(canvas);
   manager.update(dt, players, canvas.width, canvas.height, rect, modelReady);
   gameUI.render(
     manager,
@@ -280,6 +299,7 @@ const render = () => {
   }
   playerTracker.drawLandmarks(canvas, players, rect);
   if (context && (!needsModel || modelReady)) manager.draw(context);
+  renderDebug(players, modelReady);
   finalActions.hidden = manager.getState() !== 'FINAL';
   frame = requestAnimationFrame(render);
 };
@@ -288,7 +308,8 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
   button.addEventListener('click', async () => {
     const action = button.dataset.action;
     if (action === 'back') return closeInfo();
-    if (action === 'games' || action === 'howto' || action === 'select') return showInfo(action);
+    if (action === 'games' || action === 'howto' || action === 'select' || action === 'solo-test')
+      return showInfo(action);
     if (action === 'update' && waitingWorker) {
       updateRequested = true;
       waitingWorker.postMessage({ type: 'ZEYGAME_ACTIVATE_UPDATE' });
@@ -305,7 +326,7 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
       q<HTMLElement>('.menu-home').hidden = false;
       status.textContent = '';
       if (action === 'choose-another') {
-        showInfo('select');
+        showInfo(manager.getSession().mode === 'solo-test' ? 'solo-test' : 'select');
         q<HTMLButtonElement>('[data-game-index="' + selectedIndex + '"]').focus();
       } else q<HTMLButtonElement>('[data-action="start"]').focus();
       return;
@@ -378,3 +399,29 @@ function registerServiceWorker(): void {
 }
 
 window.addEventListener('load', registerServiceWorker);
+
+function renderDebug(players: PlayersTracking, modelReady: boolean): void {
+  const panel = q<HTMLElement>('.debug-panel');
+  panel.hidden = !manager.isSoloTest();
+  if (panel.hidden) return;
+  const labels = {
+    hands: 'MediaPipe Hand Landmarker',
+    pose: 'MediaPipe Pose Landmarker Lite',
+    face: 'MediaPipe Face Landmarker',
+  };
+  const set = (key: string, value: string) => {
+    q<HTMLElement>(`[data-debug="${key}"]`).textContent = value;
+  };
+  const detected =
+    players[0].detected || players[0].pose?.detected || players[0].face.detected;
+  set('game', `Oyun: ${manager.getGameName()}`);
+  set('player', `Player 1: ${detected ? 'detected' : 'not detected'}`);
+  set(
+    'model',
+    `Model: ${labels[manager.getTrackingType()]} (${modelReady ? 'ready' : requiredTracker().state})`,
+  );
+  set('fps', `FPS: ${Math.round(fps)}`);
+  set('score', `Skor: ${manager.getLiveScores()[0]}`);
+  set('state', `State: ${manager.getState()}`);
+  set('camera', `Kamera: ${camera.isReady?.() ?? true ? 'active' : 'waiting'}`);
+}

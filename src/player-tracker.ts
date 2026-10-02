@@ -1,7 +1,27 @@
-import type { HandLandmark, PlayersTracking } from './types';
+import type { HandLandmark, PlayerTracking, PlayersTracking } from './types';
 import { toCanvasPoint, type VideoRect } from './coordinate-mapper';
 
 const PLAYER_COLORS = ['#60a5fa', '#f472b6'] as const;
+
+function emptyPlayer(): PlayerTracking {
+  return {
+    hands: [],
+    pose: null,
+    face: { face: null, blend: {}, detected: false },
+    detected: false,
+  };
+}
+
+/** Collapses either camera half into Player 1 while leaving Player 2 passive. */
+export function toSoloPlayers(players: PlayersTracking): PlayersTracking {
+  const source = players[0].pose?.detected || players[0].face.detected ? players[0] : players[1];
+  const one = emptyPlayer();
+  one.hands = [...players[0].hands, ...players[1].hands];
+  one.detected = one.hands.length > 0;
+  one.pose = source.pose;
+  one.face = source.face;
+  return [one, emptyPlayer()];
+}
 
 const CONNECTIONS: ReadonlyArray<readonly [number, number]> = [
   [0, 1],

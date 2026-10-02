@@ -1,9 +1,9 @@
 import type { VideoRect } from './coordinate-mapper';
-import type { GameState, MiniGame, PlayersTracking } from './types';
+import type { GameMode, GameState, MiniGame, PlayersTracking } from './types';
 import { audio } from './audio';
 import { calibrationReadiness } from './calibration';
 
-type Session = { mode: 'party' | 'single'; games: readonly MiniGame[] };
+type Session = { mode: GameMode; games: readonly MiniGame[] };
 
 export class GameManager {
   private state: GameState = 'MENU';
@@ -37,13 +37,23 @@ export class GameManager {
     this.activeSession = { mode: 'single', games: [this.games[index]] };
     this.reset();
   }
+  startSoloTest(index: number): void {
+    if (!Number.isInteger(index) || index < 0 || index >= this.games.length)
+      throw new Error('GeÃ§ersiz oyun seÃ§imi.');
+    this.activeSession = { mode: 'solo-test', games: [this.games[index]] };
+    this.reset();
+  }
+  isSoloTest(): boolean {
+    return this.activeSession.mode === 'solo-test';
+  }
   getCalibrationReadiness(
     players: PlayersTracking,
     width?: number,
     height?: number,
     rect?: VideoRect,
   ): [boolean, boolean] {
-    return calibrationReadiness(this.miniGame, players, width, height, rect);
+    const readiness = calibrationReadiness(this.miniGame, players, width, height, rect);
+    return this.isSoloTest() ? [readiness[0], true] : readiness;
   }
   getTrackingType(): 'hands' | 'pose' | 'face' {
     return this.miniGame.needs ?? this.miniGame.tracking;
@@ -123,7 +133,10 @@ export class GameManager {
       if (this.countdown <= 0) {
         this.state = 'PLAYING';
         this.elapsed = 0;
-        this.miniGame.start(width, height);
+        this.miniGame.start(width, height, {
+          mode: this.activeSession.mode,
+          activePlayers: this.isSoloTest() ? 1 : 2,
+        });
       }
     } else if (this.state === 'PLAYING') {
       this.elapsed += dt;

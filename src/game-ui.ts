@@ -51,11 +51,15 @@ export class GameUI {
     this.node('.countdown-screen').hidden = state !== 'COUNTDOWN' || !modelReady;
     this.node('.result-screen').hidden = state !== 'RESULT' && state !== 'FINAL';
     this.node('.final-actions').hidden = state !== 'FINAL';
-    const single = manager.getSession().mode === 'single';
+    const single = manager.getSession().mode !== 'party';
+    const solo = manager.isSoloTest();
     this.node('[data-action="choose-another"]').hidden = state !== 'FINAL' || !single;
     this.node('[data-action="replay"]').textContent = single
       ? 'Aynı Oyunu Tekrar Oyna'
       : 'Tekrar Oyna';
+    this.node('[data-action="choose-another"]').textContent = solo
+      ? 'Test Listesine Dön'
+      : 'Başka Oyun Seç';
     if (state === 'CALIBRATION') {
       const type = manager.getTrackingType();
       const messages = {
@@ -84,11 +88,15 @@ export class GameUI {
             ? 'yüzünü göster'
             : 'gerekli vücut noktalarını kadraja al';
       const status =
-        readiness[0] && readiness[1]
+        solo && readiness[0]
           ? ''
-          : !readiness[0] && !readiness[1]
-            ? 'İki taraf da hazır olmalı.'
-            : `Oyuncu ${readiness[0] ? 2 : 1}, ${missing}.`;
+          : solo
+            ? `Player 1, ${missing}.`
+            : readiness[0] && readiness[1]
+              ? ''
+              : !readiness[0] && !readiness[1]
+                ? 'İki taraf da hazır olmalı.'
+                : `Oyuncu ${readiness[0] ? 2 : 1}, ${missing}.`;
       if (this.node('.calibration-status').textContent !== status)
         this.node('.calibration-status').textContent = status;
     } else if (state === 'COUNTDOWN') {
@@ -111,14 +119,22 @@ export class GameUI {
       this.text('result-title', final && !single ? 'İşte partinin sonucu!' : manager.getGameName());
       this.text(
         'winner',
-        tied
+        solo
+          ? `Player 1 test skoru: ${one}`
+          : tied
           ? '＝ Berabere! Alkışlar ikinize.'
           : `★ Oyuncu ${one > two ? 1 : 2} ${single ? 'oyunu' : final ? 'partiyi' : 'turu'} kazandı!`,
       );
       this.text('result-one', String(one));
       this.text('result-two', String(two));
-      this.text('award-one', tied ? 'Eşit puan' : one > two ? '★ Kazanan' : 'İyi mücadele!');
-      this.text('award-two', tied ? 'Eşit puan' : two > one ? '★ Kazanan' : 'İyi mücadele!');
+      this.text(
+        'award-one',
+        solo ? 'Test tamamlandı' : tied ? 'Eşit puan' : one > two ? '★ Kazanan' : 'İyi mücadele!',
+      );
+      this.text(
+        'award-two',
+        solo ? 'Pasif' : tied ? 'Eşit puan' : two > one ? '★ Kazanan' : 'İyi mücadele!',
+      );
       this.text(
         'next',
         final

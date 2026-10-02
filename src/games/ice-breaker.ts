@@ -1,4 +1,4 @@
-import type { MiniGame, PlayersTracking } from '../types';
+import type { GameStartContext, MiniGame, PlayersTracking } from '../types';
 import { audio } from '../audio';
 import { toCanvasPoint, type VideoRect } from '../coordinate-mapper';
 
@@ -30,16 +30,18 @@ export class IceBreaker implements MiniGame {
   private scores: [number, number] = [0, 0];
   private spawnTimer = 0;
   private hitClock = 0;
+  private solo = false;
 
-  start(width: number, height: number): void {
+  start(width: number, height: number, context?: GameStartContext): void {
     this.width = width;
     this.height = height;
     this.cubes = [];
     this.scores = [0, 0];
     this.spawnTimer = 0;
     this.hitClock = 0;
+    this.solo = context?.activePlayers === 1;
     this.spawnCube(0);
-    this.spawnCube(1);
+    if (!this.solo) this.spawnCube(1);
   }
 
   update(deltaTime: number, players: PlayersTracking, rect: VideoRect): void {
@@ -47,7 +49,7 @@ export class IceBreaker implements MiniGame {
     this.hitClock += deltaTime;
     if (this.spawnTimer >= 1.2) {
       this.spawnTimer = 0;
-      this.spawnCube(Math.random() < 0.5 ? 0 : 1);
+      this.spawnCube(this.solo ? 0 : Math.random() < 0.5 ? 0 : 1);
     }
     for (const cube of this.cubes) cube.age += deltaTime;
     this.cubes = this.cubes.filter((cube) => cube.age < CUBE_LIFETIME);
@@ -116,8 +118,16 @@ export class IceBreaker implements MiniGame {
   }
 
   private spawnCube(owner: 0 | 1): void {
-    const minX = owner === 0 ? this.width * 0.08 : this.width * 0.58;
-    const maxX = owner === 0 ? this.width * 0.42 : this.width * 0.92;
+    const minX = this.solo
+      ? this.width * 0.08
+      : owner === 0
+        ? this.width * 0.08
+        : this.width * 0.58;
+    const maxX = this.solo
+      ? this.width * 0.92
+      : owner === 0
+        ? this.width * 0.42
+        : this.width * 0.92;
     const size = Math.max(42, Math.min(this.width, this.height) * 0.11);
     this.cubes.push({
       owner,
