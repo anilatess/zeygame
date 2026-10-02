@@ -75,11 +75,11 @@ export class GameManager {
     if (this.state === 'CALIBRATION' && players[0].detected && players[1].detected) {
       this.state = 'COUNTDOWN';
       this.countdown = 3;
-      this.beep();
+      audio.tone(600, 0.08);
     } else if (this.state === 'COUNTDOWN') {
       const old = Math.ceil(this.countdown);
       this.countdown -= dt;
-      if (Math.ceil(this.countdown) < old && this.countdown > 0) this.beep();
+      if (Math.ceil(this.countdown) < old && this.countdown > 0) audio.tone(600, 0.08);
       if (this.countdown <= 0) {
         this.state = 'PLAYING';
         this.elapsed = 0;
@@ -101,7 +101,7 @@ export class GameManager {
         this.index++;
         this.state = 'COUNTDOWN';
         this.countdown = 3;
-        this.beep();
+        audio.tone(600, 0.08);
       } else if (this.resultTime >= 5) this.state = 'FINAL';
     }
   }
@@ -178,8 +178,5 @@ export class GameManager {
     context.fillStyle = '#f472b6';
     context.fillText(`Oyuncu 2: ${playerTwoScore}`, context.canvas.width - 20, y);
     context.restore();
-  }
-  private beep(): void {
-    audio.tone(600, 0.08);
   }
 }

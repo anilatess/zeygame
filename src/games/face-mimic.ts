@@ -1,4 +1,5 @@
 import type { MiniGame, PlayersTracking } from '../types';
+import { audio } from '../audio';
 
 type FeatureRange = readonly [min: number, max: number];
 type Expression = { name: string; icon: string; alternatives: Record<string, FeatureRange>[] };
@@ -106,7 +107,6 @@ export class FaceMimic implements MiniGame {
   private round = 0;
   private rounds: [Round, Round] = [{ best: 0 }, { best: 0 }];
   private scores: [number, number] = [0, 0];
-  private audio: AudioContext | null = null;
 
   start(width: number, height: number): void {
     this.width = width;
@@ -122,7 +122,7 @@ export class FaceMimic implements MiniGame {
       this.addRoundScores();
       this.round = next;
       this.rounds = [{ best: 0 }, { best: 0 }];
-      this.beep();
+      audio.tone(560, 0.08, 0.03, { fadeOut: false });
     }
     this.elapsed += dt;
     players.forEach((player, index) => {
@@ -182,19 +182,5 @@ export class FaceMimic implements MiniGame {
   private addRoundScores(): void {
     this.scores[0] += Math.round(this.rounds[0].best * 10);
     this.scores[1] += Math.round(this.rounds[1].best * 10);
-  }
-  private beep(): void {
-    try {
-      this.audio ??= new AudioContext();
-      const oscillator = this.audio.createOscillator();
-      const gain = this.audio.createGain();
-      oscillator.frequency.value = 560;
-      gain.gain.value = 0.03;
-      oscillator.connect(gain).connect(this.audio.destination);
-      oscillator.start();
-      oscillator.stop(this.audio.currentTime + 0.08);
-    } catch {
-      /* Ses yoksa oyun devam eder. */
-    }
   }
 }

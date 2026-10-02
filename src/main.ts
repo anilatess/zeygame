@@ -83,6 +83,7 @@ function clearDetectionsExcept(type: ReturnType<GameManager['getTrackingType']> 
 function stopSession(): void {
   session++;
   cancelAnimationFrame(frame);
+  audio.stopAll();
   camera.stop();
   handTracker.close();
   poseTracker.close();
@@ -192,6 +193,8 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
       return;
     }
     if (action === 'replay') {
+      audio.stopAll();
+      audio.unlock();
       manager.reset();
       finalActions.hidden = true;
       manager.enterCalibration();

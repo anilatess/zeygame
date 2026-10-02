@@ -1,4 +1,5 @@
 import type { MiniGame, NormalizedLandmark, PlayersTracking } from '../types';
+import { audio } from '../audio';
 type DancePose = { name: string; angles: [number, number, number, number, number, number] };
 type Round = { best: number };
 const COLORS = ['#60a5fa', '#f472b6'] as const;
@@ -20,7 +21,6 @@ export class DanceMimic implements MiniGame {
   private round = 0;
   private rounds: [Round, Round] = [{ best: 0 }, { best: 0 }];
   private scores: [number, number] = [0, 0];
-  private audio: AudioContext | null = null;
   start(width: number, height: number): void {
     this.width = width;
     this.height = height;
@@ -36,7 +36,7 @@ export class DanceMimic implements MiniGame {
       this.scores[1] += Math.round(this.rounds[1].best * 10);
       this.round = next;
       this.rounds = [{ best: 0 }, { best: 0 }];
-      this.beep();
+      audio.tone(650, 0.08, 0.03, { fadeOut: false });
     }
     this.elapsed += dt;
     players.forEach((player, i) => {
@@ -117,19 +117,5 @@ export class DanceMimic implements MiniGame {
       cb = Math.atan2(c.y - b.y, c.x - b.x);
     let d = Math.abs(((ab - cb) * 180) / Math.PI);
     return d > 180 ? 360 - d : d;
-  }
-  private beep(): void {
-    try {
-      this.audio ??= new AudioContext();
-      const o = this.audio.createOscillator();
-      const g = this.audio.createGain();
-      o.frequency.value = 650;
-      g.gain.value = 0.03;
-      o.connect(g).connect(this.audio.destination);
-      o.start();
-      o.stop(this.audio.currentTime + 0.08);
-    } catch {
-      /* ses yoksa oyun devam eder */
-    }
   }
 }

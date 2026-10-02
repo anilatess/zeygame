@@ -1,4 +1,5 @@
 import type { MiniGame, PlayersTracking, NormalizedLandmark } from '../types';
+import { audio } from '../audio';
 
 type JumpState = { samples: number[]; reference: number | null; jumping: boolean; label: string };
 
@@ -11,7 +12,6 @@ export class JumpRace implements MiniGame {
   private height = 0;
   private scores: [number, number] = [0, 0];
   private states: [JumpState, JumpState] = [this.createState(), this.createState()];
-  private audio: AudioContext | null = null;
 
   start(width: number, height: number): void {
     this.width = width;
@@ -45,7 +45,7 @@ export class JumpRace implements MiniGame {
         state.jumping = false;
         state.label = 'Hazır';
         this.scores[index] += 1;
-        this.beep();
+        audio.tone(720, 0.09, 0.035, { fadeOut: false });
       }
     });
   }
@@ -77,19 +77,5 @@ export class JumpRace implements MiniGame {
   }
   private isReliable(landmark: NormalizedLandmark | undefined): boolean {
     return Boolean(landmark && (landmark.visibility ?? landmark.presence ?? 1) >= 0.55);
-  }
-  private beep(): void {
-    try {
-      this.audio ??= new AudioContext();
-      const oscillator = this.audio.createOscillator();
-      const gain = this.audio.createGain();
-      oscillator.frequency.value = 720;
-      gain.gain.value = 0.035;
-      oscillator.connect(gain).connect(this.audio.destination);
-      oscillator.start();
-      oscillator.stop(this.audio.currentTime + 0.09);
-    } catch {
-      /* Ses kullanılamazsa oyun devam eder. */
-    }
   }
 }

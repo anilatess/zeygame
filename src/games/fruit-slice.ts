@@ -1,5 +1,6 @@
 import { toCanvasPoint, type VideoRect } from '../coordinate-mapper';
 import type { MiniGame, PlayersTracking } from '../types';
+import { audio } from '../audio';
 
 type Fruit = {
   x: number;
@@ -28,7 +29,6 @@ export class FruitSlice implements MiniGame {
   private particles: Particle[] = [];
   private scores: [number, number] = [0, 0];
   private spawn = 0;
-  private audio: AudioContext | null = null;
 
   start(width: number, height: number): void {
     this.width = width;
@@ -71,10 +71,10 @@ export class FruitSlice implements MiniGame {
           this.burst(fruit.x, fruit.y, fruit.bomb ? '#f87171' : fruit.color);
           if (fruit.bomb) {
             this.scores[index] = Math.max(0, this.scores[index] - 2);
-            this.beep(120, 0.2);
+            audio.tone(120, 0.2, 0.035, { fadeOut: false });
           } else {
             this.scores[index] += 1;
-            this.beep(620, 0.08);
+            audio.tone(620, 0.08, 0.035, { fadeOut: false });
           }
         }
       }
@@ -149,20 +149,6 @@ export class FruitSlice implements MiniGame {
       sliced: false,
       age: 0,
     });
-  }
-  private beep(frequency: number, duration: number): void {
-    try {
-      this.audio ??= new AudioContext();
-      const oscillator = this.audio.createOscillator();
-      const gain = this.audio.createGain();
-      oscillator.frequency.value = frequency;
-      gain.gain.value = 0.035;
-      oscillator.connect(gain).connect(this.audio.destination);
-      oscillator.start();
-      oscillator.stop(this.audio.currentTime + duration);
-    } catch {
-      /* Ses kullanılamazsa oyun devam eder. */
-    }
   }
   private burst(x: number, y: number, color: string): void {
     for (let i = 0; i < 8; i++)

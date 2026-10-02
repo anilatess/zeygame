@@ -1,5 +1,6 @@
 import { toCanvasPoint, type VideoRect } from '../coordinate-mapper';
 import type { MiniGame, PlayersTracking } from '../types';
+import { audio } from '../audio';
 
 type Food = {
   x: number;
@@ -26,7 +27,6 @@ export class MouthCatch implements MiniGame {
   private particles: Particle[] = [];
   private scores: [number, number] = [0, 0];
   private spawn = 0;
-  private audio: AudioContext | null = null;
   start(width: number, height: number): void {
     this.width = width;
     this.height = height;
@@ -71,13 +71,13 @@ export class MouthCatch implements MiniGame {
       this.burst(food.x, food.y, food.kind === 'bomb' ? '#f87171' : food.color);
       if (food.kind === 'bomb') {
         this.scores[index] = Math.max(0, this.scores[index] - 2);
-        this.beep(130, 0.2);
+        audio.tone(130, 0.2, 0.03, { fadeOut: false });
       } else if (food.kind === 'gold') {
         this.scores[index] += 2;
-        this.beep(820, 0.12);
+        audio.tone(820, 0.12, 0.03, { fadeOut: false });
       } else {
         this.scores[index] += 1;
-        this.beep(560, 0.08);
+        audio.tone(560, 0.08, 0.03, { fadeOut: false });
       }
     });
   }
@@ -158,19 +158,5 @@ export class MouthCatch implements MiniGame {
         life: 0.25,
         color,
       });
-  }
-  private beep(frequency: number, duration: number): void {
-    try {
-      this.audio ??= new AudioContext();
-      const o = this.audio.createOscillator();
-      const g = this.audio.createGain();
-      o.frequency.value = frequency;
-      g.gain.value = 0.03;
-      o.connect(g).connect(this.audio.destination);
-      o.start();
-      o.stop(this.audio.currentTime + duration);
-    } catch {
-      /* ses yoksa oyun devam eder */
-    }
   }
 }
