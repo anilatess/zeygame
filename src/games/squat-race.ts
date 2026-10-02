@@ -6,7 +6,7 @@ type SquatPhase = 'awaiting-standing' | 'standing' | 'down';
 
 export class SquatRace implements MiniGame {
   readonly name = 'Çömelme Yarışı';
-  readonly description = 'Çömelip kalkarak puan topla.';
+  readonly description = 'Önce ayakta dur; ardından çömelip yeniden ayağa kalkarak puan topla.';
   readonly tracking = 'pose' as const;
   private scores: [number, number] = [0, 0];
   private phases: [SquatPhase, SquatPhase] = ['awaiting-standing', 'awaiting-standing'];

@@ -21,7 +21,8 @@ const EXIT_MARGIN_RATIO = 0.1;
 
 export class IceBreaker implements MiniGame {
   readonly name = 'Buz Kırma';
-  readonly description = 'İşaret parmağınla küplere üç ayrı kez dokun.';
+  readonly description =
+    'İşaret parmağınla küpe üç ayrı kez dokun; her dokunuştan sonra parmağını küpten çıkar.';
   readonly tracking = 'hands' as const;
   private width = 0;
   private height = 0;

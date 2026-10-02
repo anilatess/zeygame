@@ -18,7 +18,7 @@ import type { PlayerFace, PlayerPose, PlayersTracking } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Uygulama kökü bulunamadı.');
-app.innerHTML = `<section class="app"><div class="card menu-card"><div class="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</div><h1>Hazır mısınız?</h1><p>Hareketlerinizi kullanarak üç mini oyunda yarışın.</p><p class="status" role="alert" aria-live="polite"></p><div class="menu-actions"><button data-action="start">Oyunu Başlat</button><button data-action="games">Oyunları Göster</button><button data-action="howto">Nasıl Oynanır?</button></div><div class="info-panel" hidden></div></div></section><section class="game" hidden><video autoplay muted playsinline></video><canvas></canvas><div class="camera-message" hidden></div><div class="model-message" hidden><p role="status" aria-live="polite"></p><button data-action="retry" hidden>Tekrar Dene</button><button data-action="home">Ana Menüye Dön</button></div><div class="calibration" hidden><div class="calibration-card"><div class="eyebrow">Kalibrasyon</div><h2>Oyuncular yerleşsin</h2><p>Oyuncu 1 sol tarafta durmalı</p><p>Oyuncu 2 sağ tarafta durmalı</p><p>İki oyuncunun elleri algılanmalı</p><p class="calibration-status"></p></div></div><div class="final-actions" hidden><button data-action="replay">Tekrar Oyna</button><button data-action="home">Ana Menüye Dön</button></div></section>`;
+app.innerHTML = `<section class="app"><div class="card menu-card"><div class="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</div><h1>Hazır mısınız?</h1><p>Hareketlerinizi kullanarak mini oyunlarda yarışın.</p><p class="status" role="alert" aria-live="polite"></p><div class="menu-actions"><button data-action="start">Oyunu Başlat</button><button data-action="games">Oyunları Göster</button><button data-action="howto">Nasıl Oynanır?</button></div><div class="info-panel" hidden></div></div></section><section class="game" hidden><video autoplay muted playsinline></video><canvas></canvas><div class="camera-message" hidden></div><div class="model-message" hidden><p role="status" aria-live="polite"></p><button data-action="retry" hidden>Tekrar Dene</button><button data-action="home">Ana Menüye Dön</button></div><div class="calibration" hidden><div class="calibration-card"><div class="eyebrow">Kalibrasyon</div><h2>Oyuncular yerleşsin</h2><p>Oyuncu 1 sol tarafta durmalı</p><p>Oyuncu 2 sağ tarafta durmalı</p><p>İki oyuncunun elleri algılanmalı</p><p class="calibration-status"></p></div></div><div class="final-actions" hidden><button data-action="replay">Tekrar Oyna</button><button data-action="home">Ana Menüye Dön</button></div></section>`;
 app.innerHTML +=
   '<div class="update-notice" role="status" aria-live="polite" hidden><span>Yeni sürüm hazır — Yenile</span><button data-action="update">Yenile</button></div>';
 
@@ -48,6 +48,8 @@ const manager = new GameManager([
   new FaceMimic(),
   new MouthCatch(),
 ]);
+q<HTMLParagraphElement>('.menu-card > p').textContent =
+  `Hareketlerinizi kullanarak ${manager.getGames().length} mini oyunda yarışın.`;
 const trackers = { hands: handTracker, pose: poseTracker, face: faceTracker };
 const modelMessage = q<HTMLElement>('.model-message');
 const modelStatus = q<HTMLElement>('.model-message p');
@@ -101,13 +103,14 @@ function stopSession(): void {
 
 function showInfo(kind: 'games' | 'howto'): void {
   info.hidden = false;
+  const descriptions = manager
+    .getGames()
+    .map((miniGame) => `<p><b>${miniGame.name}:</b> ${miniGame.description}</p>`)
+    .join('');
   info.innerHTML =
     kind === 'games'
-      ? `<h2>Mini oyunlar</h2>${manager
-          .getGames()
-          .map((miniGame) => `<p><b>${miniGame.name}:</b> ${miniGame.description}</p>`)
-          .join('')}`
-      : '<h2>Nasıl oynanır?</h2><p>Oyuncu 1 solda, Oyuncu 2 sağda durmalı.</p><p>Telefon veya laptop sabit konumda olmalı ve iyi ışık kullanılmalı.</p><p>Tüm vücut oyunlarında kameradan biraz uzakta durun.</p>';
+      ? `<h2>Mini oyunlar</h2>${descriptions}`
+      : `<h2>Nasıl oynanır?</h2><p>Oyuncu 1 solda, Oyuncu 2 sağda durmalı.</p><p>Telefon veya laptop sabit konumda olmalı ve iyi ışık kullanılmalı.</p><p>Tüm vücut oyunlarında kameradan biraz uzakta durun.</p><h3>Oyun hareketleri</h3>${descriptions}`;
 }
 function setLoading(text: string): void {
   status.textContent = `⏳ ${text}`;

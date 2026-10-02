@@ -29,6 +29,9 @@ node scripts/verify-detection-gating.mjs
 node scripts/verify-face-scoring.mjs
 node scripts/verify-model-lifecycle.mjs
 node scripts/verify-service-worker.mjs
+node scripts/verify-pose-reliability.mjs
+node scripts/verify-dance-scoring.mjs
+node scripts/verify-ice-contacts.mjs
 git diff --check
 ```
 
@@ -42,18 +45,18 @@ Kamera erişimi yalnızca **Oyunu Başlat** düğmesine basıldığında istenir
 
 Oyunlar aşağıdaki sırayla oynanır. Tablo mevcut kod davranışını açıklar; gerçek kamerayla skor doğrulaması tamamlanmış değildir.
 
-| Oyun             | Model | Mevcut davranış                                                                                                                                                      |
-| ---------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Buz Kırma        | El    | İşaret parmağı küp içindeyken 0,25 saniye aralıkla vuruş sayılır; üç vuruş 1 puandır. Sabit parmak da tekrar vuruş üretir; üç ayrı dokunuş garantisi yoktur.         |
-| Çömelme Yarışı   | Vücut | Diz açısı 110° altına indikten sonra 160° üstüne çıkınca 1 puan sayılır. Gerekli landmarkların güvenilirliği kontrol edilmiyor.                                      |
-| Ağız Açma Yarışı | Yüz   | `jawOpen > 0.6` ile 1 puan; yeniden sayım için ağız değeri önce `<= 0.6` olmalıdır.                                                                                  |
-| Meyve Kesme      | El    | İşaret parmağıyla meyveye temas 1 puan; bomba 2 puan düşürür, skor sıfırın altına inmez.                                                                             |
-| Zıplama Yarışı   | Vücut | İlk 12 örnekle kalça referansı alınır; yükselip referansa yaklaşınca 1 puan sayılır.                                                                                 |
-| Dans Taklidi     | Vücut | Dört hedef poz, altı saniyelik turlar ve tur başına en iyi benzerlik üzerinden puan üretir. Poz ayrımı/puanlama ve güvenilirlik aktarımı sorunları açıktır.          |
-| Surat Taklidi    | Yüz   | Dört yüz ifadesinde altı saniyelik turların en iyi benzerliği puana çevrilir. Nötr yüz ve geçersiz özellikler sentetik testlerle kontrol edilmiştir.                 |
-| Ağızla Yakala    | Yüz   | Burun landmarkından yaklaşık ağız konumu üretilir; `jawOpen >= 0.6` iken yiyecek yakalanır. Normal 1, altın 2 puan; bomba 2 puan düşürür, skor sıfırın altına inmez. |
+| Oyun             | Model | Mevcut davranış                                                                                                                                                                                                                                                                                      |
+| ---------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Buz Kırma        | El    | İşaret parmağıyla üç ayrı giriş/çıkış teması 1 puandır. Sabit temas tekrar sayılmaz; birden fazla el varsa tüm ilgili parmaklar genişletilmiş çıkış sınırının dışında görülmelidir.                                                                                                                  |
+| Çömelme Yarışı   | Vücut | Güvenilir ayakta → çömelmiş → ayakta dizisi 1 puandır. Diz eşikleri 110°/160°; gerekli altı eklem kontrol edilir. Takip kaybı yarım tekrarı iptal eder.                                                                                                                                              |
+| Ağız Açma Yarışı | Yüz   | `jawOpen > 0.6` ile 1 puan; yeniden sayım için ağız değeri önce `<= 0.6` olmalıdır.                                                                                                                                                                                                                  |
+| Meyve Kesme      | El    | İşaret parmağıyla meyveye temas 1 puan; bomba 2 puan düşürür, skor sıfırın altına inmez.                                                                                                                                                                                                             |
+| Zıplama Yarışı   | Vücut | İlk 12 örnekle kalça referansı alınır; yükselip referansa yaklaşınca 1 puan sayılır.                                                                                                                                                                                                                 |
+| Dans Taklidi     | Vücut | T pozu, Eller yukarı, Çömelmiş poz ve Tek kol yukarı (sol) sırayla gösterilir. T/çömelmiş hedefte kollar yana; tek kol hedefinde sol kol yukarı, sağ kol yana uzatılır. Dört 6 saniyelik turda zorunlu eklem koşullarının en düşük puanı değerlendirilir; tur en iyisi toplam skora bir kez eklenir. |
+| Surat Taklidi    | Yüz   | Büyük gülümseme, Şaşkın yüz, Bir gözünü kapat, diğerini açık tut ve Öpücük ifadesi sırayla taklit edilir. Dört 6 saniyelik turun en iyi benzerliği puana çevrilir. Nötr yüz ve geçersiz özellikler sentetik testlerle kontrol edilmiştir.                                                            |
+| Ağızla Yakala    | Yüz   | Burun landmarkından yaklaşık ağız konumu üretilir; `jawOpen >= 0.6` iken yiyecek yakalanır. Normal 1, altın 2 puan; bomba 2 puan düşürür, skor sıfırın altına inmez.                                                                                                                                 |
 
-Oyunlar arasında sonuç, son oyunda final ekranı gösterilir. Dans Taklidi ve Surat Taklidi 24 saniye, diğer oyunlar varsayılan 20 saniye sürer. Menü ve HTML açıklamasında hâlâ “üç mini oyun” metni vardır; bu görevde uygulama kodu değiştirilmemiştir.
+Oyunlar arasında sonuç, son oyunda final ekranı gösterilir. Dans Taklidi ve Surat Taklidi 24 saniye, diğer oyunlar varsayılan 20 saniye sürer. Menüdeki sayı, **Oyunları Göster** listesi ve **Nasıl Oynanır** içindeki oyun açıklamaları mevcut oyun yöneticisinin listesinden üretilir. Dans ve yüz hedefleri kendi metadata'sından açıklamalara aktarılır; statik HTML meta açıklaması oyun sayısı içermez.
 
 ## Model yükleme ve ses
 
@@ -82,7 +85,7 @@ GitHub Pages HTTPS kullandığı için kamera izni ve PWA özellikleri yayınlan
 ## Son düzeltmeler ve testler
 
 - Kamera cover crop offsetleri ortak koordinat mapper ile landmark, görüntü ve oyun çarpışmalarında kullanılır; el landmarkları tek katmanda çizilir.
-- Buz Kırma'da 0,25 saniye cooldown vardır; sabit temasın tekrar sayılması hâlâ açık hatadır.
+- Buz Kırma üç ayrı temas sayar; 0,25 saniyelik cooldown yalnız ek korumadır. Sabit temas, takip kaybı ve çoklu el durumları otomatik testlerle kontrol edilmiştir; gerçek kamera testi bekler.
 - Ana Menüye Dön kamera akışını, render döngüsünü ve modelleri kapatır; ses için tüm oyunlar ortak AudioService kullanır.
 - Surat Taklidi yalnızca hedef ifadenin anlamlı blendshape değerlerini oranlar; nötr yüz geçerli skor üretmez.
 

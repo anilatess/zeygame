@@ -178,7 +178,9 @@ export function danceTargetLandmarks(targetIndex: number): NormalizedLandmark[] 
 
 export class DanceMimic implements MiniGame {
   readonly name = 'Dans Taklidi';
-  readonly description = 'Hareketleri taklit ederek puan kazan.';
+  readonly description = DANCE_TARGETS.map(
+    (target) => `${target.name}: ${target.instruction}`,
+  ).join(' ');
   readonly tracking = 'pose' as const;
   readonly needs = 'pose' as const;
   readonly duration = ROUND_SECONDS * ROUND_COUNT;
