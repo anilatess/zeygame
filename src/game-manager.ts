@@ -20,6 +20,53 @@ export class GameManager {
     else if (this.state === 'PLAYING') { this.elapsed += dt; this.miniGame.update(dt, players); if (this.elapsed >= (this.miniGame.duration ?? 20)) { this.lastScores = this.miniGame.getScores(); this.totals[0] += this.lastScores[0]; this.totals[1] += this.lastScores[1]; this.state = 'RESULT'; this.resultTime = 0; } }
     else if (this.state === 'RESULT') { this.resultTime += dt; if (this.resultTime >= 3 && this.index < this.games.length - 1) { this.index++; this.state = 'COUNTDOWN'; this.countdown = 3; this.beep(); } else if (this.resultTime >= 5) this.state = 'FINAL'; }
   }
-  draw(context: CanvasRenderingContext2D): void { if (this.state === 'PLAYING') this.miniGame.draw(context); context.save(); context.textAlign = 'center'; context.fillStyle = '#fff'; context.font = `700 ${Math.max(18, context.canvas.width / 28)}px system-ui`; if (this.state === 'COUNTDOWN') context.fillText(`${this.getCountdown()}`, context.canvas.width / 2, context.canvas.height / 2); if (this.state === 'PLAYING') context.fillText(`Süre: ${this.getRemainingTime()} sn`, context.canvas.width / 2, Math.max(34, context.canvas.height * .08)); if (this.state === 'RESULT' || this.state === 'FINAL') { const [one, two] = this.lastScores; context.fillText(`${this.getGameName()} Sonucu`, context.canvas.width / 2, context.canvas.height * .4); context.fillText(`Oyuncu 1: ${one} - Oyuncu 2: ${two}`, context.canvas.width / 2, context.canvas.height * .5); context.fillText(one === two ? 'Berabere!' : one > two ? 'Oyuncu 1 kazandı!' : 'Oyuncu 2 kazandı!', context.canvas.width / 2, context.canvas.height * .6); if (this.state === 'RESULT' && this.index < this.games.length - 1) context.fillText(`Sonraki oyun: ${this.getResultCountdown()}`, context.canvas.width / 2, context.canvas.height * .72); if (this.state === 'FINAL') context.fillText(`Toplam skor: ${this.totals[0]} - ${this.totals[1]}`, context.canvas.width / 2, context.canvas.height * .72); } context.restore(); }
+  draw(context: CanvasRenderingContext2D): void {
+    if (this.state === 'PLAYING') {
+      this.miniGame.draw(context);
+      this.drawHud(context);
+    }
+
+    context.save();
+    context.textAlign = 'center';
+    context.fillStyle = '#fff';
+    context.font = `700 ${Math.max(18, context.canvas.width / 28)}px system-ui`;
+
+    if (this.state === 'COUNTDOWN') {
+      context.fillText(`${this.getCountdown()}`, context.canvas.width / 2, context.canvas.height / 2);
+    }
+
+    if (this.state === 'RESULT' || this.state === 'FINAL') {
+      const [one, two] = this.lastScores;
+      context.fillText(`${this.getGameName()} Sonucu`, context.canvas.width / 2, context.canvas.height * .4);
+      context.fillText(`Oyuncu 1: ${one} - Oyuncu 2: ${two}`, context.canvas.width / 2, context.canvas.height * .5);
+      context.fillText(one === two ? 'Berabere!' : one > two ? 'Oyuncu 1 kazandı!' : 'Oyuncu 2 kazandı!', context.canvas.width / 2, context.canvas.height * .6);
+      if (this.state === 'RESULT' && this.index < this.games.length - 1) context.fillText(`Sonraki oyun: ${this.getResultCountdown()}`, context.canvas.width / 2, context.canvas.height * .72);
+      if (this.state === 'FINAL') context.fillText(`Toplam skor: ${this.totals[0]} - ${this.totals[1]}`, context.canvas.width / 2, context.canvas.height * .72);
+    }
+
+    context.restore();
+  }
+
+  private drawHud(context: CanvasRenderingContext2D): void {
+    const [playerOneScore, playerTwoScore] = this.miniGame.getScores();
+    const y = Math.max(34, context.canvas.height * .08);
+
+    context.save();
+    context.font = `700 ${Math.max(18, context.canvas.width / 28)}px system-ui`;
+    context.textBaseline = 'middle';
+
+    context.textAlign = 'left';
+    context.fillStyle = '#60a5fa';
+    context.fillText(`Oyuncu 1: ${playerOneScore}`, 20, y);
+
+    context.textAlign = 'center';
+    context.fillStyle = '#ffffff';
+    context.fillText(`Süre: ${this.getRemainingTime()} sn`, context.canvas.width / 2, y);
+
+    context.textAlign = 'right';
+    context.fillStyle = '#f472b6';
+    context.fillText(`Oyuncu 2: ${playerTwoScore}`, context.canvas.width - 20, y);
+    context.restore();
+  }
   private beep(): void { audio.tone(600, .08); }
 }
