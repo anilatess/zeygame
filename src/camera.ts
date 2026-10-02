@@ -1,5 +1,5 @@
 import type { CameraError } from './types';
-import { getCoverRect } from './coordinate-mapper';
+import { getCoverRect, type VideoRect } from './coordinate-mapper';
 
 export class CameraController {
   private stream: MediaStream | null = null;
@@ -41,18 +41,23 @@ export class CameraController {
     }
   }
 
-  draw(): void {
+  draw(): VideoRect | null {
     const context = this.canvas.getContext('2d');
-    if (!context) return;
-    if (!this.isReady()) { context.clearRect(0, 0, this.canvas.width, this.canvas.height); return; }
+    if (!context) return null;
+    if (!this.isReady() || !this.canvas.width || !this.canvas.height) {
+      context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      return null;
+    }
     const { width, height } = this.canvas;
-    const { drawWidth, drawHeight, offsetX, offsetY } = getCoverRect(this.video.videoWidth, this.video.videoHeight, width, height);
+    const rect = getCoverRect(this.video.videoWidth, this.video.videoHeight, width, height);
+    const { drawWidth, drawHeight, offsetX, offsetY } = rect;
     context.save();
     context.clearRect(0, 0, width, height);
     context.translate(width, 0);
     context.scale(-1, 1);
     context.drawImage(this.video, offsetX, offsetY, drawWidth, drawHeight);
     context.restore();
+    return rect;
   }
 
   isReady(): boolean {
@@ -63,7 +68,7 @@ export class CameraController {
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
     this.canvas.width = Math.floor(this.canvas.clientWidth * ratio);
     this.canvas.height = Math.floor(this.canvas.clientHeight * ratio);
-    this.draw();
+    // The next render frame computes a fresh rect for every consumer.
   }
 
   stop(): void {

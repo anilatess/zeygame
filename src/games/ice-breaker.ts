@@ -1,6 +1,6 @@
 import type { MiniGame, PlayersTracking } from '../types';
 import { audio } from '../audio';
-import { toCanvasPoint } from '../coordinate-mapper';
+import { toCanvasPoint, type VideoRect } from '../coordinate-mapper';
 
 type IceCube = { x: number; y: number; size: number; hits: number; age: number; owner: 0 | 1; lastHit: number };
 
@@ -31,7 +31,7 @@ export class IceBreaker implements MiniGame {
     this.spawnCube(1);
   }
 
-  update(deltaTime: number, players: PlayersTracking): void {
+  update(deltaTime: number, players: PlayersTracking, rect: VideoRect): void {
     this.spawnTimer += deltaTime;
     this.hitClock += deltaTime;
     if (this.spawnTimer >= 1.2) {
@@ -45,7 +45,7 @@ export class IceBreaker implements MiniGame {
       for (const hand of player.hands) {
         const fingertip = hand[8];
         if (!fingertip) continue;
-        const point = toCanvasPoint(fingertip, { drawWidth: this.width, drawHeight: this.height, offsetX: 0, offsetY: 0 });
+        const point = toCanvasPoint(fingertip, rect);
         const x = point.x;
         const y = point.y;
         for (const cube of this.cubes) {

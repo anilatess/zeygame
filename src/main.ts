@@ -30,8 +30,9 @@ function showInfo(kind: 'games' | 'howto'): void { info.hidden = false; info.inn
 function setLoading(text: string): void { status.textContent = `⏳ ${text}`; }
 
 const render = () => {
-  const now = performance.now(), dt = Math.min((now - previous) / 1000, 0.1); previous = now; camera.draw();
-  if (!camera.isReady()) { cameraMessage.hidden = false; cameraMessage.textContent = 'Kamera görüntüsü hazırlanıyor…'; frame = requestAnimationFrame(render); return; }
+  const now = performance.now(), dt = Math.min((now - previous) / 1000, 0.1); previous = now;
+  const rect = camera.draw();
+  if (!rect) { cameraMessage.hidden = false; cameraMessage.textContent = 'Kamera görüntüsü hazırlanıyor…'; frame = requestAnimationFrame(render); return; }
   cameraMessage.hidden = true;
   const players = playerTracker.classify(handTracker.detectAndDraw(video, canvas));
   const type = manager.getTrackingType();
@@ -39,10 +40,10 @@ const render = () => {
   if (type === 'face' && !faceReady && !faceLoading) { faceLoading = true; setLoading('Yüz modeli yükleniyor…'); void faceTracker.load().then(() => { faceReady = true; }).catch(e => { status.textContent = e instanceof Error ? e.message : 'Yüz modeli yüklenemedi.'; }).finally(() => { faceLoading = false; }); }
   const poses = type === 'pose' ? poseTracker.detect(video) : [{ pose: null, detected: false }, { pose: null, detected: false }]; players[0].pose = poses[0]; players[1].pose = poses[1];
   const faces = type === 'face' ? faceTracker.detect(video) : [{ face: null, blend: {}, detected: false }, { face: null, blend: {}, detected: false }]; players[0].face = faces[0]; players[1].face = faces[1];
-  playerTracker.drawRegions(canvas); manager.update(dt, players, canvas.width, canvas.height);
+  playerTracker.drawRegions(canvas); manager.update(dt, players, canvas.width, canvas.height, rect);
   if (manager.getState() === 'CALIBRATION') { calibration.hidden = false; calibrationStatus.textContent = !players[0].detected && !players[1].detected ? 'İki el de görünür olmalı.' : !players[0].detected ? 'Oyuncu 1 için sol tarafta el gösterin.' : !players[1].detected ? 'Oyuncu 2 için sağ tarafta el gösterin.' : ''; } else calibration.hidden = true;
-  const context = canvas.getContext('2d'); if (context) { manager.draw(context); if (type === 'pose') poseTracker.draw(context, poses); if (type === 'face') faceTracker.draw(context, faces); }
-  playerTracker.drawLandmarks(canvas, players, video.videoWidth, video.videoHeight); finalActions.hidden = manager.getState() !== 'FINAL';
+  const context = canvas.getContext('2d'); if (context) { manager.draw(context); if (type === 'pose') poseTracker.draw(context, poses, rect); if (type === 'face') faceTracker.draw(context, faces, rect); }
+  playerTracker.drawLandmarks(canvas, players, rect); finalActions.hidden = manager.getState() !== 'FINAL';
   frame = requestAnimationFrame(render);
 };
 

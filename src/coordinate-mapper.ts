@@ -10,6 +10,7 @@ export function getCoverRect(videoWidth: number, videoHeight: number, canvasWidt
 }
 
 export function toCanvasPoint(landmark: NormalizedLandmark, rect: VideoRect): { x: number; y: number } {
+  // MediaPipe coordinates are unmirrored. Mirror once to match the camera image;
+  // keep cropped points outside the Canvas instead of clamping them to its edges.
   return { x: rect.offsetX + (1 - landmark.x) * rect.drawWidth, y: rect.offsetY + landmark.y * rect.drawHeight };
 }
-

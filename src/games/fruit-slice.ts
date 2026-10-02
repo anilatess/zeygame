@@ -1,3 +1,4 @@
+import { toCanvasPoint, type VideoRect } from '../coordinate-mapper';
 import type { MiniGame, PlayersTracking } from '../types';
 
 type Fruit = { x: number; y: number; vx: number; vy: number; radius: number; color: string; shape: 'circle' | 'diamond' | 'oval'; bomb: boolean; sliced: boolean; owner: 0 | 1; age: number };
@@ -12,14 +13,34 @@ export class FruitSlice implements MiniGame {
   private width = 0; private height = 0; private fruits: Fruit[] = []; private particles: Particle[] = []; private scores: [number, number] = [0, 0]; private spawn = 0; private audio: AudioContext | null = null;
 
   start(width: number, height: number): void { this.width = width; this.height = height; this.fruits = []; this.particles = []; this.scores = [0, 0]; this.spawn = 0; }
-  update(dt: number, players: PlayersTracking): void {
+  update(dt: number, players: PlayersTracking, rect: VideoRect): void {
     this.spawn += dt;
     if (this.spawn > 0.7) { this.spawn = 0; this.addFruit(Math.random() < 0.5 ? 0 : 1); }
     for (const fruit of this.fruits) { fruit.age += dt; fruit.x += fruit.vx * dt; fruit.y += fruit.vy * dt; }
     this.fruits = this.fruits.filter((fruit) => !fruit.sliced && fruit.age < 5 && fruit.y < this.height + fruit.radius);
     for (const particle of this.particles) { particle.life -= dt; particle.x += particle.vx * dt; particle.y += particle.vy * dt; }
     this.particles = this.particles.filter((particle) => particle.life > 0);
-    players.forEach((player, index) => { for (const hand of player.hands) { const tip = hand[8]; if (!tip) continue; const x = (1 - tip.x) * this.width; const y = tip.y * this.height; const fruit = this.fruits.find((item) => item.owner === index && Math.hypot(item.x - x, item.y - y) < item.radius); if (fruit) { fruit.sliced = true; this.burst(fruit.x, fruit.y, fruit.bomb ? '#f87171' : fruit.color); if (fruit.bomb) { this.scores[index] = Math.max(0, this.scores[index] - 2); this.beep(120, 0.2); } else { this.scores[index] += 1; this.beep(620, 0.08); } } } });
+    players.forEach((player, index) => {
+      for (const hand of player.hands) {
+        const tip = hand[8];
+        if (!tip) continue;
+        const { x, y } = toCanvasPoint(tip, rect);
+        const fruit = this.fruits.find(
+          (item) => item.owner === index && Math.hypot(item.x - x, item.y - y) < item.radius,
+        );
+        if (fruit) {
+          fruit.sliced = true;
+          this.burst(fruit.x, fruit.y, fruit.bomb ? '#f87171' : fruit.color);
+          if (fruit.bomb) {
+            this.scores[index] = Math.max(0, this.scores[index] - 2);
+            this.beep(120, 0.2);
+          } else {
+            this.scores[index] += 1;
+            this.beep(620, 0.08);
+          }
+        }
+      }
+    });
   }
   draw(context: CanvasRenderingContext2D): void {
     context.save(); context.textAlign = 'center'; context.font = `700 ${Math.max(14, this.width / 42)}px system-ui`; context.fillStyle = '#fff'; context.fillText('Meyveleri kes, bombalara dokunma!', this.width / 2, Math.max(28, this.height * 0.13));

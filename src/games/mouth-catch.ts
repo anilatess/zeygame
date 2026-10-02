@@ -1,3 +1,4 @@
+import { toCanvasPoint, type VideoRect } from '../coordinate-mapper';
 import type { MiniGame, PlayersTracking } from '../types';
 
 type Food = { x: number; y: number; size: number; speed: number; color: string; shape: 'circle' | 'diamond' | 'oval'; kind: 'normal' | 'gold' | 'bomb'; owner: 0 | 1; caught: boolean };
@@ -11,7 +12,7 @@ export class MouthCatch implements MiniGame {
   readonly needs = 'face' as const;
   private width = 0; private height = 0; private foods: Food[] = []; private particles: Particle[] = []; private scores: [number, number] = [0, 0]; private spawn = 0; private audio: AudioContext | null = null;
   start(width: number, height: number): void { this.width = width; this.height = height; this.foods = []; this.particles = []; this.scores = [0, 0]; this.spawn = 0; }
-  update(dt: number, players: PlayersTracking): void {
+  update(dt: number, players: PlayersTracking, rect: VideoRect): void {
     this.spawn += dt; if (this.spawn > 0.65) { this.spawn = 0; this.addFood(Math.random() < 0.5 ? 0 : 1); }
     for (const food of this.foods) food.y += food.speed * dt;
     for (const particle of this.particles) { particle.life -= dt; particle.x += particle.vx * dt; particle.y += particle.vy * dt; }
@@ -20,7 +21,12 @@ export class MouthCatch implements MiniGame {
     players.forEach((player, index) => {
       const face = player.face; if (!face.detected || !face.face || (face.blend.jawOpen ?? 0) < 0.6) return;
       const nose = face.face[1] ?? face.face[0]; if (!nose) return;
-      const mouthX = (1 - nose.x) * this.width; const mouthY = nose.y * this.height + this.height * 0.07; const tolerance = Math.max(28, this.width * 0.045);
+      const nosePoint = toCanvasPoint(nose, rect);
+      const mouthX = nosePoint.x;
+      // Preserve the existing approximation: 7% of the current Canvas height below the nose.
+      const canvasHeight = rect.drawHeight + 2 * rect.offsetY;
+      const mouthY = nosePoint.y + canvasHeight * 0.07;
+      const tolerance = Math.max(28, this.width * 0.045);
       const food = this.foods.find((item) => item.owner === index && Math.abs(item.x - mouthX) < item.size + tolerance && Math.abs(item.y - mouthY) < item.size + tolerance);
       if (!food) return; food.caught = true; this.burst(food.x, food.y, food.kind === 'bomb' ? '#f87171' : food.color);
       if (food.kind === 'bomb') { this.scores[index] = Math.max(0, this.scores[index] - 2); this.beep(130, 0.2); }

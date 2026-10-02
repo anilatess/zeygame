@@ -1,3 +1,5 @@
+import type { VideoRect } from './coordinate-mapper';
+
 export type CameraStatus = 'idle' | 'starting' | 'active' | 'denied' | 'missing' | 'error';
 
 export interface CameraError {
@@ -36,7 +38,7 @@ export type MiniGame = {
   needs?: 'hands' | 'pose' | 'face';
   duration?: number;
   start(width: number, height: number): void;
-  update(deltaTime: number, players: PlayersTracking): void;
+  update(deltaTime: number, players: PlayersTracking, rect: VideoRect): void;
   draw(context: CanvasRenderingContext2D): void;
   getScores(): [number, number];
 };

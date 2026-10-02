@@ -1,5 +1,5 @@
 import type { HandLandmark, PlayersTracking } from './types';
-import { getCoverRect, toCanvasPoint } from './coordinate-mapper';
+import { toCanvasPoint, type VideoRect } from './coordinate-mapper';
 
 const PLAYER_COLORS = ['#60a5fa', '#f472b6'] as const;
 
@@ -26,9 +26,9 @@ export class PlayerTracker {
     return players;
   }
 
-  drawOverlay(canvas: HTMLCanvasElement, players: PlayersTracking): void {
+  drawOverlay(canvas: HTMLCanvasElement, players: PlayersTracking, rect: VideoRect): void {
     this.drawRegions(canvas);
-    this.drawLandmarks(canvas, players, canvas.width, canvas.height);
+    this.drawLandmarks(canvas, players, rect);
   }
 
   drawRegions(canvas: HTMLCanvasElement): void {
@@ -47,11 +47,10 @@ export class PlayerTracker {
     context.restore();
   }
 
-  drawLandmarks(canvas: HTMLCanvasElement, players: PlayersTracking, videoWidth: number, videoHeight: number): void {
+  drawLandmarks(canvas: HTMLCanvasElement, players: PlayersTracking, rect: VideoRect): void {
     const context = canvas.getContext('2d');
     if (!context) return;
     context.save();
-    const rect = getCoverRect(videoWidth, videoHeight, canvas.width, canvas.height);
     players.forEach((player, playerIndex) => {
       context.strokeStyle = PLAYER_COLORS[playerIndex];
       context.fillStyle = PLAYER_COLORS[playerIndex];
