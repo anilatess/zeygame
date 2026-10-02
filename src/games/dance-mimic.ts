@@ -4,6 +4,8 @@ type Round = { best: number };
 const COLORS = ['#60a5fa', '#f472b6'] as const;
 const POSES: DancePose[] = [{ name: 'T pozu', angles: [90, 90, 90, 90, 175, 175] }, { name: 'Eller yukarı', angles: [165, 165, 35, 35, 175, 175] }, { name: 'Çömelmiş poz', angles: [90, 90, 90, 90, 85, 85] }, { name: 'Tek kol yukarı', angles: [165, 90, 35, 90, 175, 175] }];
 export class DanceMimic implements MiniGame {
+  readonly name = 'Dans Taklidi';
+  readonly description = 'Hareketleri taklit ederek puan kazan.';
   readonly tracking = 'pose' as const; readonly needs = 'pose' as const; readonly duration = 24;
   private width = 0; private height = 0; private elapsed = 0; private round = 0; private rounds: [Round, Round] = [{ best: 0 }, { best: 0 }]; private scores: [number, number] = [0, 0]; private audio: AudioContext | null = null;
   start(width: number, height: number): void { this.width = width; this.height = height; this.elapsed = 0; this.round = 0; this.scores = [0, 0]; this.rounds = [{ best: 0 }, { best: 0 }]; }

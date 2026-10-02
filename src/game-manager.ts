@@ -1,99 +1,25 @@
 import type { GameState, MiniGame, PlayersTracking } from './types';
+import { audio } from './audio';
 
 export class GameManager {
-  private state: GameState = 'MENU';
-  private countdown = 3;
-  private elapsed = 0;
-  private resultTime = 0;
-  private lastScores: [number, number] = [0, 0];
-  private totals: [number, number] = [0, 0];
-
-  private index = 0;
+  private state: GameState = 'MENU'; private countdown = 3; private elapsed = 0; private resultTime = 0; private index = 0;
+  private lastScores: [number, number] = [0, 0]; private totals: [number, number] = [0, 0];
   constructor(private readonly games: MiniGame[]) {}
   private get miniGame(): MiniGame { return this.games[this.index]; }
+  getGames(): readonly MiniGame[] { return this.games; }
   getTrackingType(): 'hands' | 'pose' | 'face' { return this.miniGame.needs ?? this.miniGame.tracking; }
-
-  getState(): GameState { return this.state; }
-  getCountdown(): number { return Math.ceil(this.countdown); }
+  getState(): GameState { return this.state; } getCountdown(): number { return Math.ceil(this.countdown); }
   getRemainingTime(): number { return Math.max(0, Math.ceil((this.miniGame.duration ?? 20) - this.elapsed)); }
-  getScores(): [number, number] { return [...this.lastScores]; }
-  getTotals(): [number, number] { return [...this.totals]; }
-  getGameName(): string { return ['Buz Kırma', 'Çömelme Yarışı', 'Ağız Açma Yarışı'][this.index] ?? 'Mini Oyun'; }
-  getResultCountdown(): number { return Math.max(0, Math.ceil(3 - this.resultTime)); }
+  getScores(): [number, number] { return [...this.lastScores]; } getTotals(): [number, number] { return [...this.totals]; }
+  getGameName(): string { return this.miniGame.name; } getResultCountdown(): number { return Math.max(0, Math.ceil(3 - this.resultTime)); }
   reset(): void { this.state = 'MENU'; this.index = 0; this.elapsed = 0; this.resultTime = 0; this.lastScores = [0, 0]; this.totals = [0, 0]; }
-
   enterCalibration(): void { this.state = 'CALIBRATION'; }
-
-  update(deltaTime: number, players: PlayersTracking, width: number, height: number): void {
-    if (this.state === 'CALIBRATION' && players[0].detected && players[1].detected) {
-      this.state = 'COUNTDOWN';
-      this.countdown = 3;
-      this.playBeep();
-    } else if (this.state === 'COUNTDOWN') {
-      const previous = Math.ceil(this.countdown);
-      this.countdown -= deltaTime;
-      if (Math.ceil(this.countdown) < previous && this.countdown > 0) this.playBeep();
-      if (this.countdown <= 0) {
-        this.state = 'PLAYING';
-        this.elapsed = 0;
-        this.miniGame.start(width, height);
-      }
-    } else if (this.state === 'PLAYING') {
-      this.elapsed += deltaTime;
-      this.miniGame.update(deltaTime, players);
-      if (this.elapsed >= (this.miniGame.duration ?? 20)) {
-        this.lastScores = this.miniGame.getScores();
-        this.totals[0] += this.lastScores[0]; this.totals[1] += this.lastScores[1];
-        this.state = 'RESULT';
-        this.resultTime = 0;
-      }
-    } else if (this.state === 'RESULT') {
-      this.resultTime += deltaTime;
-      if (this.resultTime >= 3 && this.index < this.games.length - 1) { this.index++; this.state = 'COUNTDOWN'; this.countdown = 3; this.playBeep(); }
-      else if (this.resultTime >= 5) this.state = 'FINAL';
-    }
+  update(dt: number, players: PlayersTracking, width: number, height: number): void {
+    if (this.state === 'CALIBRATION' && players[0].detected && players[1].detected) { this.state = 'COUNTDOWN'; this.countdown = 3; this.beep(); }
+    else if (this.state === 'COUNTDOWN') { const old = Math.ceil(this.countdown); this.countdown -= dt; if (Math.ceil(this.countdown) < old && this.countdown > 0) this.beep(); if (this.countdown <= 0) { this.state = 'PLAYING'; this.elapsed = 0; this.miniGame.start(width, height); } }
+    else if (this.state === 'PLAYING') { this.elapsed += dt; this.miniGame.update(dt, players); if (this.elapsed >= (this.miniGame.duration ?? 20)) { this.lastScores = this.miniGame.getScores(); this.totals[0] += this.lastScores[0]; this.totals[1] += this.lastScores[1]; this.state = 'RESULT'; this.resultTime = 0; } }
+    else if (this.state === 'RESULT') { this.resultTime += dt; if (this.resultTime >= 3 && this.index < this.games.length - 1) { this.index++; this.state = 'COUNTDOWN'; this.countdown = 3; this.beep(); } else if (this.resultTime >= 5) this.state = 'FINAL'; }
   }
-
-  draw(context: CanvasRenderingContext2D): void {
-    if (this.state === 'PLAYING') this.miniGame.draw(context);
-    context.save();
-    context.textAlign = 'center';
-    context.fillStyle = '#ffffff';
-    context.font = `700 ${Math.max(18, context.canvas.width / 28)}px system-ui`;
-    if (this.state === 'COUNTDOWN') context.fillText(`${this.getCountdown()}`, context.canvas.width / 2, context.canvas.height / 2);
-    if (this.state === 'PLAYING') {
-      context.fillText(`Süre: ${this.getRemainingTime()} sn`, context.canvas.width / 2, Math.max(34, context.canvas.height * 0.08));
-      context.textAlign = 'left';
-      context.fillStyle = '#60a5fa';
-      context.fillText(`Oyuncu 1: ${this.miniGame.getScores()[0]}`, 20, Math.max(34, context.canvas.height * 0.08));
-      context.textAlign = 'right';
-      context.fillStyle = '#f472b6';
-      context.fillText(`Oyuncu 2: ${this.miniGame.getScores()[1]}`, context.canvas.width - 20, Math.max(34, context.canvas.height * 0.08));
-    }
-    if (this.state === 'RESULT' || this.state === 'FINAL') {
-      const [one, two] = this.lastScores;
-      const title = one === two ? 'Berabere!' : one > two ? 'Oyuncu 1 kazandı!' : 'Oyuncu 2 kazandı!';
-      context.fillText(`${this.getGameName()} Sonucu`, context.canvas.width / 2, context.canvas.height * 0.4);
-      context.font = `700 ${Math.max(16, context.canvas.width / 38)}px system-ui`;
-      context.fillText(`Oyuncu 1: ${one}  -  Oyuncu 2: ${two}`, context.canvas.width / 2, context.canvas.height * 0.5);
-      context.fillText(title, context.canvas.width / 2, context.canvas.height * 0.6);
-      if (this.state === 'RESULT' && this.index < this.games.length - 1) context.fillText(`Sonraki oyun: ${this.getResultCountdown()}`, context.canvas.width / 2, context.canvas.height * 0.72);
-      if (this.state === 'FINAL') { context.fillText(`Toplam skor: ${this.totals[0]} - ${this.totals[1]}`, context.canvas.width / 2, context.canvas.height * 0.72); }
-    }
-    context.restore();
-  }
-
-  private playBeep(): void {
-    try {
-      const audio = new AudioContext();
-      const oscillator = audio.createOscillator();
-      const gain = audio.createGain();
-      oscillator.frequency.value = 600;
-      gain.gain.value = 0.04;
-      oscillator.connect(gain).connect(audio.destination);
-      oscillator.start();
-      oscillator.stop(audio.currentTime + 0.08);
-      oscillator.addEventListener('ended', () => void audio.close(), { once: true });
-    } catch { /* Ses desteği yoksa oyun devam eder. */ }
-  }
+  draw(context: CanvasRenderingContext2D): void { if (this.state === 'PLAYING') this.miniGame.draw(context); context.save(); context.textAlign = 'center'; context.fillStyle = '#fff'; context.font = `700 ${Math.max(18, context.canvas.width / 28)}px system-ui`; if (this.state === 'COUNTDOWN') context.fillText(`${this.getCountdown()}`, context.canvas.width / 2, context.canvas.height / 2); if (this.state === 'PLAYING') context.fillText(`Süre: ${this.getRemainingTime()} sn`, context.canvas.width / 2, Math.max(34, context.canvas.height * .08)); if (this.state === 'RESULT' || this.state === 'FINAL') { const [one, two] = this.lastScores; context.fillText(`${this.getGameName()} Sonucu`, context.canvas.width / 2, context.canvas.height * .4); context.fillText(`Oyuncu 1: ${one} - Oyuncu 2: ${two}`, context.canvas.width / 2, context.canvas.height * .5); context.fillText(one === two ? 'Berabere!' : one > two ? 'Oyuncu 1 kazandı!' : 'Oyuncu 2 kazandı!', context.canvas.width / 2, context.canvas.height * .6); if (this.state === 'RESULT' && this.index < this.games.length - 1) context.fillText(`Sonraki oyun: ${this.getResultCountdown()}`, context.canvas.width / 2, context.canvas.height * .72); if (this.state === 'FINAL') context.fillText(`Toplam skor: ${this.totals[0]} - ${this.totals[1]}`, context.canvas.width / 2, context.canvas.height * .72); } context.restore(); }
+  private beep(): void { audio.tone(600, .08); }
 }

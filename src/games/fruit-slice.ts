@@ -5,6 +5,8 @@ type Particle = { x: number; y: number; vx: number; vy: number; life: number; co
 const COLORS = ['#60a5fa', '#f472b6'] as const;
 
 export class FruitSlice implements MiniGame {
+  readonly name = 'Meyve Kesme';
+  readonly description = 'Meyveleri kes, bombalara dokunma.';
   readonly tracking = 'hands' as const;
   readonly needs = 'hands' as const;
   private width = 0; private height = 0; private fruits: Fruit[] = []; private particles: Particle[] = []; private scores: [number, number] = [0, 0]; private spawn = 0; private audio: AudioContext | null = null;

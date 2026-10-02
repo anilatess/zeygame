@@ -1,4 +1,5 @@
 import type { HandLandmark, PlayersTracking } from './types';
+import { getCoverRect, toCanvasPoint } from './coordinate-mapper';
 
 const PLAYER_COLORS = ['#60a5fa', '#f472b6'] as const;
 
@@ -27,7 +28,7 @@ export class PlayerTracker {
 
   drawOverlay(canvas: HTMLCanvasElement, players: PlayersTracking): void {
     this.drawRegions(canvas);
-    this.drawLandmarks(canvas, players);
+    this.drawLandmarks(canvas, players, canvas.width, canvas.height);
   }
 
   drawRegions(canvas: HTMLCanvasElement): void {
@@ -46,25 +47,26 @@ export class PlayerTracker {
     context.restore();
   }
 
-  drawLandmarks(canvas: HTMLCanvasElement, players: PlayersTracking): void {
+  drawLandmarks(canvas: HTMLCanvasElement, players: PlayersTracking, videoWidth: number, videoHeight: number): void {
     const context = canvas.getContext('2d');
     if (!context) return;
     context.save();
+    const rect = getCoverRect(videoWidth, videoHeight, canvas.width, canvas.height);
     players.forEach((player, playerIndex) => {
       context.strokeStyle = PLAYER_COLORS[playerIndex];
       context.fillStyle = PLAYER_COLORS[playerIndex];
       context.lineWidth = Math.max(3, canvas.width / 300);
       for (const hand of player.hands) {
         for (const [from, to] of CONNECTIONS) {
-          const start = this.toCanvasPoint(hand[from], canvas);
-          const end = this.toCanvasPoint(hand[to], canvas);
+          const start = toCanvasPoint(hand[from], rect);
+          const end = toCanvasPoint(hand[to], rect);
           context.beginPath();
           context.moveTo(start.x, start.y);
           context.lineTo(end.x, end.y);
           context.stroke();
         }
         for (const landmark of hand) {
-          const point = this.toCanvasPoint(landmark, canvas);
+          const point = toCanvasPoint(landmark, rect);
           context.beginPath();
           context.arc(point.x, point.y, Math.max(4, canvas.width / 160), 0, Math.PI * 2);
           context.fill();
@@ -74,7 +76,4 @@ export class PlayerTracker {
     context.restore();
   }
 
-  private toCanvasPoint(landmark: HandLandmark, canvas: HTMLCanvasElement) {
-    return { x: (1 - landmark.x) * canvas.width, y: landmark.y * canvas.height };
-  }
 }

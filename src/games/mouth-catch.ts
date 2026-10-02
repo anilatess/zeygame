@@ -5,6 +5,8 @@ type Particle = { x: number; y: number; vx: number; vy: number; life: number; co
 const COLORS = ['#60a5fa', '#f472b6'] as const;
 
 export class MouthCatch implements MiniGame {
+  readonly name = 'Ağızla Yakala';
+  readonly description = 'Ağzını açarak yiyecekleri yakala.';
   readonly tracking = 'face' as const;
   readonly needs = 'face' as const;
   private width = 0; private height = 0; private foods: Food[] = []; private particles: Particle[] = []; private scores: [number, number] = [0, 0]; private spawn = 0; private audio: AudioContext | null = null;

@@ -1,4 +1,5 @@
 import type { HandLandmark, HandTrackingError } from './types';
+import { getCoverRect, toCanvasPoint } from './coordinate-mapper';
 
 const TASKS_VISION_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs';
 const WASM_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm';
@@ -55,32 +56,6 @@ export class HandTracker {
 
     const result = this.landmarker.detectForVideo(video, performance.now());
     this.lastLandmarks = result.landmarks ?? [];
-    const context = canvas.getContext('2d');
-    if (!context) return this.lastLandmarks;
-    const { drawWidth, drawHeight, offsetX, offsetY } = this.getVideoRect(video, canvas);
-    context.save();
-    context.lineWidth = Math.max(2, canvas.width / 360);
-    context.lineCap = 'round';
-    context.strokeStyle = '#a5f3fc';
-    context.fillStyle = '#fef08a';
-
-    for (const hand of result.landmarks ?? []) {
-      for (const [from, to] of CONNECTIONS) {
-        const start = this.toCanvasPoint(hand[from], drawWidth, drawHeight, offsetX, offsetY);
-        const end = this.toCanvasPoint(hand[to], drawWidth, drawHeight, offsetX, offsetY);
-        context.beginPath();
-        context.moveTo(start.x, start.y);
-        context.lineTo(end.x, end.y);
-        context.stroke();
-      }
-      for (const landmark of hand) {
-        const point = this.toCanvasPoint(landmark, drawWidth, drawHeight, offsetX, offsetY);
-        context.beginPath();
-        context.arc(point.x, point.y, Math.max(3, canvas.width / 180), 0, Math.PI * 2);
-        context.fill();
-      }
-    }
-    context.restore();
     return this.lastLandmarks;
   }
 
@@ -91,16 +66,6 @@ export class HandTracker {
     this.lastLandmarks = [];
   }
 
-  private getVideoRect(video: HTMLVideoElement, canvas: HTMLCanvasElement) {
-    const scale = Math.max(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
-    const drawWidth = video.videoWidth * scale;
-    const drawHeight = video.videoHeight * scale;
-    return { drawWidth, drawHeight, offsetX: (canvas.width - drawWidth) / 2, offsetY: (canvas.height - drawHeight) / 2 };
-  }
-
-  private toCanvasPoint(landmark: HandLandmark, drawWidth: number, drawHeight: number, offsetX: number, offsetY: number) {
-    return { x: offsetX + (1 - landmark.x) * drawWidth, y: offsetY + landmark.y * drawHeight };
-  }
 
   private createError(status: HandTrackingError['status'], message: string): HandTrackingError {
     return { status, message };

@@ -1,17 +1,23 @@
 import type { MiniGame, PlayersTracking } from '../types';
+import { audio } from '../audio';
+import { toCanvasPoint } from '../coordinate-mapper';
 
-type IceCube = { x: number; y: number; size: number; hits: number; age: number; owner: 0 | 1 };
+type IceCube = { x: number; y: number; size: number; hits: number; age: number; owner: 0 | 1; lastHit: number };
 
 const PLAYER_COLORS = ['#60a5fa', '#f472b6'] as const;
 const CUBE_LIFETIME = 4;
+const HIT_COOLDOWN = 0.25;
 
 export class IceBreaker implements MiniGame {
+  readonly name = 'Buz Kırma';
+  readonly description = 'İşaret parmağınla küplere üç ayrı kez dokun.';
   readonly tracking = 'hands' as const;
   private width = 0;
   private height = 0;
   private cubes: IceCube[] = [];
   private scores: [number, number] = [0, 0];
   private spawnTimer = 0;
+  private hitClock = 0;
   private audioContext: AudioContext | null = null;
 
   start(width: number, height: number): void {
@@ -20,12 +26,14 @@ export class IceBreaker implements MiniGame {
     this.cubes = [];
     this.scores = [0, 0];
     this.spawnTimer = 0;
+    this.hitClock = 0;
     this.spawnCube(0);
     this.spawnCube(1);
   }
 
   update(deltaTime: number, players: PlayersTracking): void {
     this.spawnTimer += deltaTime;
+    this.hitClock += deltaTime;
     if (this.spawnTimer >= 1.2) {
       this.spawnTimer = 0;
       this.spawnCube(Math.random() < 0.5 ? 0 : 1);
@@ -37,15 +45,17 @@ export class IceBreaker implements MiniGame {
       for (const hand of player.hands) {
         const fingertip = hand[8];
         if (!fingertip) continue;
-        const x = (1 - fingertip.x) * this.width;
-        const y = fingertip.y * this.height;
+        const point = toCanvasPoint(fingertip, { drawWidth: this.width, drawHeight: this.height, offsetX: 0, offsetY: 0 });
+        const x = point.x;
+        const y = point.y;
         for (const cube of this.cubes) {
-          if (cube.owner !== playerIndex || !this.isInside(cube, x, y)) continue;
+          if (cube.owner !== playerIndex || !this.isInside(cube, x, y) || this.hitClock - cube.lastHit < HIT_COOLDOWN) continue;
+          cube.lastHit = this.hitClock;
           cube.hits += 1;
-          this.playTone(420, 0.045);
+          audio.tone(420, 0.045);
           if (cube.hits >= 3) {
             this.scores[playerIndex as 0 | 1] += 1;
-            this.playTone(760, 0.12);
+            audio.tone(760, 0.12);
             this.cubes = this.cubes.filter((candidate) => candidate !== cube);
           }
           break;
@@ -85,6 +95,7 @@ export class IceBreaker implements MiniGame {
       y: this.height * 0.2 + Math.random() * this.height * 0.6,
       hits: 0,
       age: 0,
+      lastHit: -Infinity,
     });
   }
 

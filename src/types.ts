@@ -30,6 +30,8 @@ export type PlayersTracking = [PlayerTracking, PlayerTracking];
 export type GameState = 'MENU' | 'CALIBRATION' | 'COUNTDOWN' | 'PLAYING' | 'RESULT' | 'FINAL';
 
 export type MiniGame = {
+  name: string;
+  description: string;
   tracking: 'hands' | 'pose' | 'face';
   needs?: 'hands' | 'pose' | 'face';
   duration?: number;

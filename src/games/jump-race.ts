@@ -3,6 +3,8 @@ import type { MiniGame, PlayersTracking, NormalizedLandmark } from '../types';
 type JumpState = { samples: number[]; reference: number | null; jumping: boolean; label: string };
 
 export class JumpRace implements MiniGame {
+  readonly name = 'Zıplama Yarışı';
+  readonly description = 'Zıplayarak puan topla.';
   readonly tracking = 'pose' as const;
   readonly needs = 'pose' as const;
   private width = 0;

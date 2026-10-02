@@ -1,4 +1,5 @@
 import type { CameraError } from './types';
+import { getCoverRect } from './coordinate-mapper';
 
 export class CameraController {
   private stream: MediaStream | null = null;
@@ -45,14 +46,12 @@ export class CameraController {
     if (!context) return;
     if (!this.isReady()) { context.clearRect(0, 0, this.canvas.width, this.canvas.height); return; }
     const { width, height } = this.canvas;
-    const scale = Math.max(width / this.video.videoWidth, height / this.video.videoHeight);
-    const drawWidth = this.video.videoWidth * scale;
-    const drawHeight = this.video.videoHeight * scale;
+    const { drawWidth, drawHeight, offsetX, offsetY } = getCoverRect(this.video.videoWidth, this.video.videoHeight, width, height);
     context.save();
     context.clearRect(0, 0, width, height);
     context.translate(width, 0);
     context.scale(-1, 1);
-    context.drawImage(this.video, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+    context.drawImage(this.video, offsetX, offsetY, drawWidth, drawHeight);
     context.restore();
   }
 

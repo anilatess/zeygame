@@ -2,7 +2,7 @@
 
 ## Proje açıklaması
 
-ZeyGame, kamera ve MediaPipe ile kontrol edilen iki kişilik, üç mini oyunlu parti oyunudur. Kamera ve algılama verileri tarayıcı içinde işlenir.
+ZeyGame, kamera ve MediaPipe ile kontrol edilen iki kişilik, 8 mini oyunlu parti oyunudur. Kamera ve algılama verileri tarayıcı içinde işlenir.
 
 ## Kullanılan teknolojiler
 
@@ -42,6 +42,15 @@ Repository adı `zeygame` olduğu için `vite.config.ts` içinde `base: '/zeygam
 5. Workflow tamamlandığında **Settings → Pages** bölümündeki **Visit site** bağlantısından yayınlanan adresi açın. Aynı adres Actions deploy çıktısında da görünür.
 
 GitHub Pages HTTPS kullandığı için kamera izni ve PWA özellikleri yayınlanan adreste kullanılabilir. MediaPipe WASM/model dosyaları sabit CDN adreslerinden tarayıcıda yüklenir; service worker, manifest ve ikon yolları GitHub Pages alt diziniyle uyumludur.
+
+## Son düzeltmeler ve testler
+
+- Kamera cover crop offsetleri ortak koordinat mapper ile landmark, görüntü ve oyun çarpışmalarında kullanılır; el landmarkları tek katmanda çizilir.
+- Buz Kırma vuruşları 0,25 saniye cooldown ile üç ayrı temasta sayılır.
+- Ana Menüye Dön kamera akışını, render döngüsünü ve modelleri kapatır; ses için tüm oyunlar ortak AudioService kullanır.
+- Surat Taklidi yalnızca hedef ifadenin anlamlı blendshape değerlerini oranlar; nötr yüz geçerli skor üretmez.
+
+Kontrol: `npm.cmd run build`; canlı kontrolde dikey parmak-hedef hizası, cooldown, kamera kapanması, nötr yüz skoru, sekizinci oyun adı ve model hata durumunu doğrulayın.
 
 ## PWA
 
