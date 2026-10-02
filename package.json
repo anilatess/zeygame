@@ -12,8 +12,15 @@
     "format:check": "prettier --check src scripts"
   },
   "devDependencies": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^4.7.0",
     "prettier": "^3.9.9",
     "typescript": "^5.6.3",
     "vite": "^6.0.5"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   }
 }

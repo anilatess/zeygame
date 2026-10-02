@@ -136,8 +136,8 @@ function showInfo(kind: 'games' | 'howto' | 'select' | 'solo-test'): void {
       (kind === 'solo-test'
         ? '<div class="section-heading"><div class="eyebrow">GELİŞTİRİCİ MODU</div><h2 id="info-title" tabindex="-1">Tek Kişilik Test</h2><p>Bir mini oyun seç; kamera yalnızca seni Player 1 olarak izlesin.</p></div><p class="selection-status" role="alert" aria-live="polite"></p>'
         : kind === 'select'
-        ? '<div class="section-heading"><div class="eyebrow">İKİ KİŞİ, TEK MEYDAN OKUMA</div><h2 id="info-title" tabindex="-1">Oyun Seç</h2><p>Bir oyun seçin, yan yana yarışın.</p></div><p class="selection-status" role="alert" aria-live="polite"></p>'
-        : '<div class="section-heading"><div class="eyebrow">PARTİDE NELER VAR?</div><h2 id="info-title" tabindex="-1">Oyunları Keşfet</h2><p>Her tur yeni bir meydan okuma. Hepsi aynı partide!</p></div>') +
+          ? '<div class="section-heading"><div class="eyebrow">İKİ KİŞİ, TEK MEYDAN OKUMA</div><h2 id="info-title" tabindex="-1">Oyun Seç</h2><p>Bir oyun seçin, yan yana yarışın.</p></div><p class="selection-status" role="alert" aria-live="polite"></p>'
+          : '<div class="section-heading"><div class="eyebrow">PARTİDE NELER VAR?</div><h2 id="info-title" tabindex="-1">Oyunları Keşfet</h2><p>Her tur yeni bir meydan okuma. Hepsi aynı partide!</p></div>') +
       '<div class="game-grid">' +
       manager
         .getGames()
@@ -412,8 +412,7 @@ function renderDebug(players: PlayersTracking, modelReady: boolean): void {
   const set = (key: string, value: string) => {
     q<HTMLElement>(`[data-debug="${key}"]`).textContent = value;
   };
-  const detected =
-    players[0].detected || players[0].pose?.detected || players[0].face.detected;
+  const detected = players[0].detected || players[0].pose?.detected || players[0].face.detected;
   set('game', `Oyun: ${manager.getGameName()}`);
   set('player', `Player 1: ${detected ? 'detected' : 'not detected'}`);
   set(
@@ -423,5 +422,5 @@ function renderDebug(players: PlayersTracking, modelReady: boolean): void {
   set('fps', `FPS: ${Math.round(fps)}`);
   set('score', `Skor: ${manager.getLiveScores()[0]}`);
   set('state', `State: ${manager.getState()}`);
-  set('camera', `Kamera: ${camera.isReady?.() ?? true ? 'active' : 'waiting'}`);
+  set('camera', `Kamera: ${(camera.isReady?.() ?? true) ? 'active' : 'waiting'}`);
 }

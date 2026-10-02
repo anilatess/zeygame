@@ -127,16 +127,8 @@ export class MouthCatch implements MiniGame {
   }
   private addFood(owner: 0 | 1): void {
     const size = Math.max(17, Math.min(this.width, this.height) * 0.04);
-    const min = this.solo
-      ? this.width * 0.08
-      : owner === 0
-        ? this.width * 0.08
-        : this.width * 0.58;
-    const max = this.solo
-      ? this.width * 0.92
-      : owner === 0
-        ? this.width * 0.42
-        : this.width * 0.92;
+    const min = this.solo ? this.width * 0.08 : owner === 0 ? this.width * 0.08 : this.width * 0.58;
+    const max = this.solo ? this.width * 0.92 : owner === 0 ? this.width * 0.42 : this.width * 0.92;
     const roll = Math.random();
     this.foods.push({
       owner,

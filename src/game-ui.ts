@@ -122,8 +122,8 @@ export class GameUI {
         solo
           ? `Player 1 test skoru: ${one}`
           : tied
-          ? '＝ Berabere! Alkışlar ikinize.'
-          : `★ Oyuncu ${one > two ? 1 : 2} ${single ? 'oyunu' : final ? 'partiyi' : 'turu'} kazandı!`,
+            ? '＝ Berabere! Alkışlar ikinize.'
+            : `★ Oyuncu ${one > two ? 1 : 2} ${single ? 'oyunu' : final ? 'partiyi' : 'turu'} kazandı!`,
       );
       this.text('result-one', String(one));
       this.text('result-two', String(two));
