@@ -71,10 +71,14 @@ export class FaceTracker extends ModelLifecycle<FaceModel> {
       }
     });
   }
-  close(): void {
-    super.close();
+  clearDetections(): void {
     this.last = -1;
     this.faces = [this.empty(), this.empty()];
+  }
+
+  close(): void {
+    super.close();
+    this.clearDetections();
   }
   private empty(): PlayerFace {
     return { face: null, blend: {}, detected: false };

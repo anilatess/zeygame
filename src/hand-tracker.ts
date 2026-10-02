@@ -64,9 +64,13 @@ export class HandTracker extends ModelLifecycle<HandLandmarkerInstance> {
     return this.lastLandmarks;
   }
 
-  close(): void {
-    super.close();
+  clearDetections(): void {
     this.lastVideoTime = -1;
     this.lastLandmarks = [];
+  }
+
+  close(): void {
+    super.close();
+    this.clearDetections();
   }
 }

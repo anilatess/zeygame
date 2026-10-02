@@ -97,13 +97,17 @@ export class PoseTracker extends ModelLifecycle<PoseInstance> {
       }
     });
   }
-  close(): void {
-    super.close();
+  clearDetections(): void {
     this.last = -1;
     this.poses = [
       { pose: null, detected: false },
       { pose: null, detected: false },
     ];
+  }
+
+  close(): void {
+    super.close();
+    this.clearDetections();
   }
   private smooth(
     previous: NormalizedLandmark[] | null,

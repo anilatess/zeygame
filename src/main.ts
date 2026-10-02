@@ -14,6 +14,7 @@ import { DanceMimic } from './games/dance-mimic';
 import { FaceMimic } from './games/face-mimic';
 import { MouthCatch } from './games/mouth-catch';
 import { audio } from './audio';
+import type { PlayerFace, PlayerPose, PlayersTracking } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Uygulama kökü bulunamadı.');
@@ -52,9 +53,31 @@ const retryButton = q<HTMLButtonElement>('[data-action="retry"]');
 let frame = 0,
   previous = performance.now(),
   session = 0;
+let previousTrackingType: ReturnType<GameManager['getTrackingType']> | null = null;
 
 function requiredTracker() {
   return trackers[manager.getState() === 'CALIBRATION' ? 'hands' : manager.getTrackingType()];
+}
+
+function emptyPose(): PlayerPose {
+  return { pose: null, detected: false };
+}
+
+function emptyFace(): PlayerFace {
+  return { face: null, blend: {}, detected: false };
+}
+
+function emptyPlayers(): PlayersTracking {
+  return [
+    { hands: [], pose: null, face: emptyFace(), detected: false },
+    { hands: [], pose: null, face: emptyFace(), detected: false },
+  ];
+}
+
+function clearDetectionsExcept(type: ReturnType<GameManager['getTrackingType']> | null): void {
+  if (type !== 'hands') handTracker.clearDetections();
+  if (type !== 'pose') poseTracker.clearDetections();
+  if (type !== 'face') faceTracker.clearDetections();
 }
 
 function stopSession(): void {
@@ -64,6 +87,7 @@ function stopSession(): void {
   handTracker.close();
   poseTracker.close();
   faceTracker.close();
+  previousTrackingType = null;
   manager.reset();
   modelMessage.hidden = true;
 }
@@ -94,33 +118,33 @@ const render = () => {
     return;
   }
   cameraMessage.hidden = true;
-  const players = playerTracker.classify(handTracker.detect(video));
+  const state = manager.getState();
   const type = manager.getTrackingType();
+  const detectionType = state === 'CALIBRATION' ? 'hands' : type;
   const tracker = requiredTracker();
-  const needsModel = ['CALIBRATION', 'COUNTDOWN', 'PLAYING'].includes(manager.getState());
+  const needsModel = ['CALIBRATION', 'COUNTDOWN', 'PLAYING'].includes(state);
   if (needsModel && tracker.state === 'idle') void tracker.load();
   const modelReady = tracker.state === 'ready';
+  const activeDetectionType = needsModel && modelReady ? detectionType : null;
+  if (activeDetectionType !== previousTrackingType) {
+    clearDetectionsExcept(activeDetectionType);
+    previousTrackingType = activeDetectionType;
+  }
   modelMessage.hidden = !needsModel || modelReady;
   modelStatus.textContent =
     tracker.state === 'failed' ? tracker.errorMessage : 'Takip modeli yükleniyor…';
   retryButton.hidden = tracker.state !== 'failed';
   retryButton.disabled = tracker.state !== 'failed';
+  const players =
+    activeDetectionType === 'hands'
+      ? playerTracker.classify(handTracker.detect(video))
+      : emptyPlayers();
   const poses =
-    type === 'pose'
-      ? poseTracker.detect(video)
-      : [
-          { pose: null, detected: false },
-          { pose: null, detected: false },
-        ];
+    activeDetectionType === 'pose' ? poseTracker.detect(video) : [emptyPose(), emptyPose()];
   players[0].pose = poses[0];
   players[1].pose = poses[1];
   const faces =
-    type === 'face'
-      ? faceTracker.detect(video)
-      : [
-          { face: null, blend: {}, detected: false },
-          { face: null, blend: {}, detected: false },
-        ];
+    activeDetectionType === 'face' ? faceTracker.detect(video) : [emptyFace(), emptyFace()];
   players[0].face = faces[0];
   players[1].face = faces[1];
   playerTracker.drawRegions(canvas);
@@ -139,8 +163,8 @@ const render = () => {
   const context = canvas.getContext('2d');
   if (context) {
     manager.draw(context);
-    if (type === 'pose') poseTracker.draw(context, poses, rect);
-    if (type === 'face') faceTracker.draw(context, faces, rect);
+    if (activeDetectionType === 'pose') poseTracker.draw(context, poses, rect);
+    if (activeDetectionType === 'face') faceTracker.draw(context, faces, rect);
   }
   playerTracker.drawLandmarks(canvas, players, rect);
   finalActions.hidden = manager.getState() !== 'FINAL';
