@@ -19,6 +19,8 @@ import type { PlayerFace, PlayerPose, PlayersTracking } from './types';
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Uygulama kökü bulunamadı.');
 app.innerHTML = `<section class="app"><div class="card menu-card"><div class="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</div><h1>Hazır mısınız?</h1><p>Hareketlerinizi kullanarak üç mini oyunda yarışın.</p><p class="status" role="alert" aria-live="polite"></p><div class="menu-actions"><button data-action="start">Oyunu Başlat</button><button data-action="games">Oyunları Göster</button><button data-action="howto">Nasıl Oynanır?</button></div><div class="info-panel" hidden></div></div></section><section class="game" hidden><video autoplay muted playsinline></video><canvas></canvas><div class="camera-message" hidden></div><div class="model-message" hidden><p role="status" aria-live="polite"></p><button data-action="retry" hidden>Tekrar Dene</button><button data-action="home">Ana Menüye Dön</button></div><div class="calibration" hidden><div class="calibration-card"><div class="eyebrow">Kalibrasyon</div><h2>Oyuncular yerleşsin</h2><p>Oyuncu 1 sol tarafta durmalı</p><p>Oyuncu 2 sağ tarafta durmalı</p><p>İki oyuncunun elleri algılanmalı</p><p class="calibration-status"></p></div></div><div class="final-actions" hidden><button data-action="replay">Tekrar Oyna</button><button data-action="home">Ana Menüye Dön</button></div></section>`;
+app.innerHTML +=
+  '<div class="update-notice" role="status" aria-live="polite" hidden><span>Yeni sürüm hazır — Yenile</span><button data-action="update">Yenile</button></div>';
 
 const q = <T extends Element>(s: string) => app.querySelector<T>(s)!;
 const intro = q<HTMLElement>('.app'),
@@ -50,6 +52,10 @@ const trackers = { hands: handTracker, pose: poseTracker, face: faceTracker };
 const modelMessage = q<HTMLElement>('.model-message');
 const modelStatus = q<HTMLElement>('.model-message p');
 const retryButton = q<HTMLButtonElement>('[data-action="retry"]');
+const updateNotice = q<HTMLElement>('.update-notice');
+let waitingWorker: ServiceWorker | null = null;
+let updateRequested = false;
+let updateReloaded = false;
 let frame = 0,
   previous = performance.now(),
   session = 0;
@@ -176,6 +182,11 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
   button.addEventListener('click', async () => {
     const action = button.dataset.action;
     if (action === 'games' || action === 'howto') return showInfo(action);
+    if (action === 'update' && waitingWorker) {
+      updateRequested = true;
+      waitingWorker.postMessage({ type: 'ZEYGAME_ACTIVATE_UPDATE' });
+      return;
+    }
     if (action === 'home') {
       stopSession();
       finalActions.hidden = true;
@@ -230,7 +241,46 @@ app.querySelectorAll<HTMLButtonElement>('button').forEach((button) =>
 window.addEventListener('resize', () => camera.resize());
 window.addEventListener('orientationchange', () => camera.resize());
 window.addEventListener('beforeunload', stopSession);
-if ('serviceWorker' in navigator)
-  window.addEventListener('load', () => {
-    void navigator.serviceWorker.register('./sw.js');
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!updateRequested || updateReloaded) return;
+    updateReloaded = true;
+    window.location.reload();
   });
+}
+
+function showUpdate(worker: ServiceWorker): void {
+  waitingWorker = worker;
+  updateNotice.hidden = false;
+}
+
+function registerServiceWorker(): void {
+  if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return;
+  const baseUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
+  const workerUrl = new URL('sw.js', baseUrl);
+  void navigator.serviceWorker
+    .register(workerUrl, { scope: baseUrl.pathname })
+    .then((registration) => {
+      if (registration.waiting && navigator.serviceWorker.controller) {
+        showUpdate(registration.waiting);
+      }
+      registration.addEventListener('updatefound', () => {
+        const installing = registration.installing;
+        if (!installing) return;
+        installing.addEventListener('statechange', () => {
+          if (
+            installing.state === 'installed' &&
+            registration.waiting &&
+            navigator.serviceWorker.controller
+          ) {
+            showUpdate(registration.waiting);
+          }
+        });
+      });
+    })
+    .catch(() => {
+      /* Service worker is optional; the online application remains usable. */
+    });
+}
+
+window.addEventListener('load', registerServiceWorker);

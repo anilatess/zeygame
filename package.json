@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
-    "build": "tsc -b && vite build --configLoader runner",
+    "build": "tsc -b && vite build --configLoader runner && node scripts/generate-service-worker.mjs",
     "preview": "vite preview",
     "format": "prettier --write src scripts",
     "format:check": "prettier --check src scripts"

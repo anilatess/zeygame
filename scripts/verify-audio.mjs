@@ -87,7 +87,10 @@ function runtime(globals = {}, overrides = new Map()) {
     if (url.pathname.endsWith('.css')) return {};
     const exports = {};
     cache.set(url.href, exports);
-    const source = fs.readFileSync(url, 'utf8');
+    const source = fs
+      .readFileSync(url, 'utf8')
+      .replaceAll('import.meta.env.PROD', 'false')
+      .replaceAll('import.meta.env.BASE_URL', "'/zeygame/'");
     const { outputText } = ts.transpileModule(source, {
       compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
     });
