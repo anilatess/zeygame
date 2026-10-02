@@ -10,11 +10,14 @@ type IceCube = {
   age: number;
   owner: 0 | 1;
   lastHit: number;
+  touching: boolean;
+  contactHandCount: number;
 };
 
 const PLAYER_COLORS = ['#60a5fa', '#f472b6'] as const;
 const CUBE_LIFETIME = 4;
 const HIT_COOLDOWN = 0.25;
+const EXIT_MARGIN_RATIO = 0.1;
 
 export class IceBreaker implements MiniGame {
   readonly name = 'Buz Kırma';
@@ -48,32 +51,45 @@ export class IceBreaker implements MiniGame {
     for (const cube of this.cubes) cube.age += deltaTime;
     this.cubes = this.cubes.filter((cube) => cube.age < CUBE_LIFETIME);
 
-    players.forEach((player, playerIndex) => {
-      for (const hand of player.hands) {
-        const fingertip = hand[8];
-        if (!fingertip) continue;
-        const point = toCanvasPoint(fingertip, rect);
-        const x = point.x;
-        const y = point.y;
-        for (const cube of this.cubes) {
-          if (
-            cube.owner !== playerIndex ||
-            !this.isInside(cube, x, y) ||
-            this.hitClock - cube.lastHit < HIT_COOLDOWN
+    for (const cube of this.cubes) {
+      const hands = players[cube.owner].hands;
+      const points = hands.map((hand) => {
+        const tip = hand[8];
+        if (!tip || !Number.isFinite(tip.x) || !Number.isFinite(tip.y)) return null;
+        const point = toCanvasPoint(tip, rect);
+        return Number.isFinite(point.x) && Number.isFinite(point.y) ? point : null;
+      });
+      if (cube.touching) {
+        // Hand order is not identity. A reduced hand count or invalid/missing
+        // observation cannot prove that all previously involved fingers left.
+        cube.contactHandCount = Math.max(cube.contactHandCount, hands.length);
+        if (
+          points.length >= cube.contactHandCount &&
+          points.length > 0 &&
+          points.every(
+            (point) => point && !this.isInside(cube, point.x, point.y, EXIT_MARGIN_RATIO),
           )
-            continue;
-          cube.lastHit = this.hitClock;
-          cube.hits += 1;
-          audio.tone(420, 0.045);
-          if (cube.hits >= 3) {
-            this.scores[playerIndex as 0 | 1] += 1;
-            audio.tone(760, 0.12);
-            this.cubes = this.cubes.filter((candidate) => candidate !== cube);
-          }
-          break;
+        ) {
+          cube.touching = false;
+          cube.contactHandCount = 0;
         }
+        continue;
       }
-    });
+      if (!points.some((point) => point && this.isInside(cube, point.x, point.y))) continue;
+      // Consume the entry even during cooldown: staying inside cannot turn a
+      // rejected entry into a delayed hit.
+      cube.touching = true;
+      cube.contactHandCount = hands.length;
+      if (this.hitClock - cube.lastHit < HIT_COOLDOWN) continue;
+      cube.lastHit = this.hitClock;
+      cube.hits += 1;
+      audio.tone(420, 0.045);
+      if (cube.hits >= 3) {
+        this.scores[cube.owner] += 1;
+        audio.tone(760, 0.12);
+      }
+    }
+    this.cubes = this.cubes.filter((cube) => cube.hits < 3);
   }
 
   draw(context: CanvasRenderingContext2D): void {
@@ -110,10 +126,13 @@ export class IceBreaker implements MiniGame {
       hits: 0,
       age: 0,
       lastHit: -Infinity,
+      touching: false,
+      contactHandCount: 0,
     });
   }
 
-  private isInside(cube: IceCube, x: number, y: number): boolean {
-    return Math.abs(x - cube.x) <= cube.size / 2 && Math.abs(y - cube.y) <= cube.size / 2;
+  private isInside(cube: IceCube, x: number, y: number, marginRatio = 0): boolean {
+    const half = cube.size / 2 + cube.size * marginRatio;
+    return Math.abs(x - cube.x) <= half && Math.abs(y - cube.y) <= half;
   }
 }
