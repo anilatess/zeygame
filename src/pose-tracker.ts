@@ -114,10 +114,16 @@ export class PoseTracker extends ModelLifecycle<PoseInstance> {
     next: NormalizedLandmark[],
   ): NormalizedLandmark[] {
     if (!previous) return next;
-    return next.map((l, i) => ({
-      x: previous[i].x * 0.65 + l.x * 0.35,
-      y: previous[i].y * 0.65 + l.y * 0.35,
-      z: previous[i].z * 0.65 + l.z * 0.35,
-    }));
+    return next.map((l, i) => {
+      const old = previous[i];
+      if (!old) return { ...l };
+      return {
+        // Confidence belongs to this frame; smooth positions only.
+        ...l,
+        x: old.x * 0.65 + l.x * 0.35,
+        y: old.y * 0.65 + l.y * 0.35,
+        z: old.z * 0.65 + l.z * 0.35,
+      };
+    });
   }
 }
