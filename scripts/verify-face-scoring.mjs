@@ -12,7 +12,8 @@ function load(relative) {
   });
   const exports = {};
   vm.runInNewContext(outputText, {
-    exports, performance,
+    exports,
+    performance,
     require: () => load('../src/coordinate-mapper.ts'),
   });
   return exports;
@@ -20,8 +21,13 @@ function load(relative) {
 const { FaceMimic, EXPRESSIONS, scoreExpression } = load('../src/games/face-mimic.ts');
 const { FaceTracker } = load('../src/face-tracker.ts');
 const zero = {
-  jawOpen: 0, browInnerUp: 0, mouthSmileLeft: 0, mouthSmileRight: 0,
-  eyeBlinkLeft: 0, eyeBlinkRight: 0, mouthPucker: 0,
+  jawOpen: 0,
+  browInnerUp: 0,
+  mouthSmileLeft: 0,
+  mouthSmileRight: 0,
+  eyeBlinkLeft: 0,
+  eyeBlinkRight: 0,
+  mouthPucker: 0,
 };
 function check(label, index, values, expected) {
   const result = scoreExpression({ ...zero, ...values }, EXPRESSIONS[index]);
@@ -30,20 +36,27 @@ function check(label, index, values, expected) {
   console.log(`${label}: ${result.score.toFixed(6)}`);
 }
 for (let i = 0; i < 4; i++) check(`Neutral target ${i + 1}`, i, {}, 0);
-check('Smile', 0, { mouthSmileLeft: .9, mouthSmileRight: .9 }, 1);
-check('Jaw only, smile target', 0, { jawOpen: .9 }, 0);
-check('Left wink', 2, { eyeBlinkLeft: .9, eyeBlinkRight: .1 }, 1);
-check('Right wink', 2, { eyeBlinkLeft: .1, eyeBlinkRight: .9 }, 1);
-check('Both eyes closed', 2, { eyeBlinkLeft: .9, eyeBlinkRight: .9 }, 1 / 7);
-check('Kiss', 3, { mouthPucker: .9, mouthSmileLeft: .1, mouthSmileRight: .1 }, 1);
-check('Kiss with smile', 3, { mouthPucker: .9, mouthSmileLeft: .9, mouthSmileRight: .9 }, 1 / 7);
-check('Surprise', 1, { jawOpen: .9, browInnerUp: .8, mouthSmileLeft: .1, mouthSmileRight: .1 }, 1);
+check('Smile', 0, { mouthSmileLeft: 0.9, mouthSmileRight: 0.9 }, 1);
+check('Jaw only, smile target', 0, { jawOpen: 0.9 }, 0);
+check('Left wink', 2, { eyeBlinkLeft: 0.9, eyeBlinkRight: 0.1 }, 1);
+check('Right wink', 2, { eyeBlinkLeft: 0.1, eyeBlinkRight: 0.9 }, 1);
+check('Both eyes closed', 2, { eyeBlinkLeft: 0.9, eyeBlinkRight: 0.9 }, 1 / 7);
+check('Kiss', 3, { mouthPucker: 0.9, mouthSmileLeft: 0.1, mouthSmileRight: 0.1 }, 1);
+check('Kiss with smile', 3, { mouthPucker: 0.9, mouthSmileLeft: 0.9, mouthSmileRight: 0.9 }, 1 / 7);
+check(
+  'Surprise',
+  1,
+  { jawOpen: 0.9, browInnerUp: 0.8, mouthSmileLeft: 0.1, mouthSmileRight: 0.1 },
+  1,
+);
 
 let boundaryChecks = 0;
 let invalidChecks = 0;
 for (const expression of EXPRESSIONS) {
   for (const target of expression.alternatives) {
-    const valid = Object.fromEntries(Object.entries(target).map(([key, [min, max]]) => [key, (min + max) / 2]));
+    const valid = Object.fromEntries(
+      Object.entries(target).map(([key, [min, max]]) => [key, (min + max) / 2]),
+    );
     for (const [name, [min, max]] of Object.entries(target)) {
       for (const value of [min, max]) {
         const result = scoreExpression({ ...valid, [name]: value }, expression);
@@ -51,12 +64,14 @@ for (const expression of EXPRESSIONS) {
         assert.equal(result.score, 1);
         boundaryChecks++;
       }
-      for (const value of [0, 1, min - 1e-6, min + 1e-6, max - 1e-6, max + 1e-6].filter(v => v >= 0 && v <= 1)) {
+      for (const value of [0, 1, min - 1e-6, min + 1e-6, max - 1e-6, max + 1e-6].filter(
+        (v) => v >= 0 && v <= 1,
+      )) {
         const result = scoreExpression({ ...valid, [name]: value }, expression);
         assert.ok(Number.isFinite(result.score) && result.score >= 0 && result.score <= 1);
         boundaryChecks++;
       }
-      for (const value of [undefined, NaN, Infinity, -Infinity, -.1, 1.1]) {
+      for (const value of [undefined, NaN, Infinity, -Infinity, -0.1, 1.1]) {
         const actual = { ...valid, [name]: value };
         if (value === undefined) delete actual[name];
         const result = scoreExpression(actual, expression);
@@ -67,30 +82,38 @@ for (const expression of EXPRESSIONS) {
     }
   }
 }
-console.log(`PASS ${boundaryChecks} boundary checks; ${invalidChecks} invalid/missing cases: score 0, skipped`);
+console.log(
+  `PASS ${boundaryChecks} boundary checks; ${invalidChecks} invalid/missing cases: score 0, skipped`,
+);
 
 // Exercise the real tracker with synthetic MediaPipe categories, without loading a model.
 const tracker = new FaceTracker();
-tracker.model = { detectForVideo: () => ({
-  faceLandmarks: [[{ x: .75, y: .5, z: 0 }]],
-  faceBlendshapes: [{ categories: Object.entries(zero).map(([categoryName, score]) => ({ categoryName, score })) }],
-}) };
+tracker.model = {
+  detectForVideo: () => ({
+    faceLandmarks: [[{ x: 0.75, y: 0.5, z: 0 }]],
+    faceBlendshapes: [
+      {
+        categories: Object.entries(zero).map(([categoryName, score]) => ({ categoryName, score })),
+      },
+    ],
+  }),
+};
 const tracked = tracker.detect({ videoWidth: 1280, currentTime: 1 });
 for (const name of Object.keys(zero)) assert.equal(tracked[0].blend[name], 0);
 console.log('PASS tracker forwards all seven required blendshape fields');
 
 const best = [
-  { ...zero, mouthSmileLeft: .9, mouthSmileRight: .9 },
-  { ...zero, jawOpen: .9, browInnerUp: .8 },
-  { ...zero, eyeBlinkLeft: .9, eyeBlinkRight: .1 },
-  { ...zero, mouthPucker: .9 },
+  { ...zero, mouthSmileLeft: 0.9, mouthSmileRight: 0.9 },
+  { ...zero, jawOpen: 0.9, browInnerUp: 0.8 },
+  { ...zero, eyeBlinkLeft: 0.9, eyeBlinkRight: 0.1 },
+  { ...zero, mouthPucker: 0.9 },
 ];
 const game = new FaceMimic();
 game.start(1280, 720);
 const scores = [];
 for (let frame = 0; frame < 96; frame++) {
   const round = Math.floor(frame / 24);
-  game.update(.25, [
+  game.update(0.25, [
     { face: { detected: true, blend: best[round] } },
     { face: { detected: true, blend: zero } },
   ]);
@@ -107,12 +130,33 @@ console.log(`PASS round totals added once: ${scores.join(', ')} (24 seconds)`);
 // Live percentage and final points must use the same weakest-condition score.
 const partial = new FaceMimic();
 partial.start(1280, 720);
-partial.update(0, [{ face: { detected: true, blend: { mouthSmileLeft: .3, mouthSmileRight: .9 } } },
-  { face: { detected: false, blend: {} } }]);
+partial.update(0, [
+  { face: { detected: true, blend: { mouthSmileLeft: 0.3, mouthSmileRight: 0.9 } } },
+  { face: { detected: false, blend: {} } },
+]);
 const labels = [];
-partial.draw(new Proxy({}, { get: (_, key) => (...args) => { if (key === 'fillText') labels.push(args[0]); } }));
-assert.ok(labels.some(label => label.includes('Oyuncu 1: 50%')));
-partial.update(6, [{ face: { detected: true, blend: {} } }, { face: { detected: false, blend: {} } }]);
-partial.update(0, [{ face: { detected: false, blend: {} } }, { face: { detected: false, blend: {} } }]);
+partial.draw(
+  new Proxy(
+    {},
+    {
+      get:
+        (_, key) =>
+        (...args) => {
+          if (key === 'fillText') labels.push(args[0]);
+        },
+    },
+  ),
+);
+assert.ok(labels.some((label) => label.includes('Oyuncu 1: 50%')));
+partial.update(6, [
+  { face: { detected: true, blend: {} } },
+  { face: { detected: false, blend: {} } },
+]);
+partial.update(0, [
+  { face: { detected: false, blend: {} } },
+  { face: { detected: false, blend: {} } },
+]);
 assert.equal(partial.getScores()[0], 5);
-console.log('PASS live indicator 50% -> round score 5; missing data does not replace the best score');
+console.log(
+  'PASS live indicator 50% -> round score 5; missing data does not replace the best score',
+);

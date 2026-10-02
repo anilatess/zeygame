@@ -17,7 +17,12 @@ export class CameraController {
     try {
       this.stop();
       this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280, max: 1280 }, height: { ideal: 720, max: 720 }, frameRate: { ideal: 30, max: 30 } },
+        video: {
+          facingMode: 'user',
+          width: { ideal: 1280, max: 1280 },
+          height: { ideal: 720, max: 720 },
+          frameRate: { ideal: 30, max: 30 },
+        },
         audio: false,
       });
       this.video.srcObject = this.stream;
@@ -32,12 +37,18 @@ export class CameraController {
       this.stop();
       const name = error instanceof DOMException ? error.name : '';
       if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-        throw this.createError('denied', 'Kamera izni reddedildi. Oyunu oynayabilmek için tarayıcı ayarlarından kamera izni verin.');
+        throw this.createError(
+          'denied',
+          'Kamera izni reddedildi. Oyunu oynayabilmek için tarayıcı ayarlarından kamera izni verin.',
+        );
       }
       if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
         throw this.createError('missing', 'Bu cihazda kullanılabilir bir kamera bulunamadı.');
       }
-      throw this.createError('error', 'Kamera başlatılamadı. Lütfen bağlantınızı ve tarayıcı izinlerini kontrol edin.');
+      throw this.createError(
+        'error',
+        'Kamera başlatılamadı. Lütfen bağlantınızı ve tarayıcı izinlerini kontrol edin.',
+      );
     }
   }
 
@@ -61,7 +72,12 @@ export class CameraController {
   }
 
   isReady(): boolean {
-    return this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && this.video.videoWidth > 0 && this.video.videoHeight > 0 && Boolean(this.video.srcObject);
+    return (
+      this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+      this.video.videoWidth > 0 &&
+      this.video.videoHeight > 0 &&
+      Boolean(this.video.srcObject)
+    );
   }
 
   resize(): void {

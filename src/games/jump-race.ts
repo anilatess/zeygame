@@ -31,13 +31,22 @@ export class JumpRace implements MiniGame {
       const state = this.states[index];
       if (state.reference === null) {
         state.samples.push(hipY);
-        if (state.samples.length >= 12) state.reference = state.samples.reduce((sum, value) => sum + value, 0) / state.samples.length;
+        if (state.samples.length >= 12)
+          state.reference =
+            state.samples.reduce((sum, value) => sum + value, 0) / state.samples.length;
         state.label = 'Hazır';
         return;
       }
       const rise = state.reference - hipY;
-      if (!state.jumping && rise > 0.045) { state.jumping = true; state.label = 'Zıplıyor'; }
-      else if (state.jumping && rise < 0.018) { state.jumping = false; state.label = 'Hazır'; this.scores[index] += 1; this.beep(); }
+      if (!state.jumping && rise > 0.045) {
+        state.jumping = true;
+        state.label = 'Zıplıyor';
+      } else if (state.jumping && rise < 0.018) {
+        state.jumping = false;
+        state.label = 'Hazır';
+        this.scores[index] += 1;
+        this.beep();
+      }
     });
   }
 
@@ -50,14 +59,37 @@ export class JumpRace implements MiniGame {
     this.states.forEach((state, index) => {
       context.fillStyle = index === 0 ? '#60a5fa' : '#f472b6';
       context.font = `700 ${Math.max(14, this.width / 38)}px system-ui`;
-      context.fillText(`Oyuncu ${index + 1}: ${state.label}`, index === 0 ? this.width * 0.25 : this.width * 0.75, this.height * 0.9);
+      context.fillText(
+        `Oyuncu ${index + 1}: ${state.label}`,
+        index === 0 ? this.width * 0.25 : this.width * 0.75,
+        this.height * 0.9,
+      );
     });
     context.restore();
   }
 
-  getScores(): [number, number] { return [...this.scores]; }
+  getScores(): [number, number] {
+    return [...this.scores];
+  }
 
-  private createState(): JumpState { return { samples: [], reference: null, jumping: false, label: 'Hazır' }; }
-  private isReliable(landmark: NormalizedLandmark | undefined): boolean { return Boolean(landmark && (landmark.visibility ?? landmark.presence ?? 1) >= 0.55); }
-  private beep(): void { try { this.audio ??= new AudioContext(); const oscillator = this.audio.createOscillator(); const gain = this.audio.createGain(); oscillator.frequency.value = 720; gain.gain.value = 0.035; oscillator.connect(gain).connect(this.audio.destination); oscillator.start(); oscillator.stop(this.audio.currentTime + 0.09); } catch { /* Ses kullanılamazsa oyun devam eder. */ } }
+  private createState(): JumpState {
+    return { samples: [], reference: null, jumping: false, label: 'Hazır' };
+  }
+  private isReliable(landmark: NormalizedLandmark | undefined): boolean {
+    return Boolean(landmark && (landmark.visibility ?? landmark.presence ?? 1) >= 0.55);
+  }
+  private beep(): void {
+    try {
+      this.audio ??= new AudioContext();
+      const oscillator = this.audio.createOscillator();
+      const gain = this.audio.createGain();
+      oscillator.frequency.value = 720;
+      gain.gain.value = 0.035;
+      oscillator.connect(gain).connect(this.audio.destination);
+      oscillator.start();
+      oscillator.stop(this.audio.currentTime + 0.09);
+    } catch {
+      /* Ses kullanılamazsa oyun devam eder. */
+    }
+  }
 }

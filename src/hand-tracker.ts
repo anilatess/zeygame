@@ -1,14 +1,34 @@
 import type { HandLandmark, HandTrackingError } from './types';
 import { getCoverRect, toCanvasPoint } from './coordinate-mapper';
 
-const TASKS_VISION_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs';
+const TASKS_VISION_CDN =
+  'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs';
 const WASM_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm';
-const HAND_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+const HAND_MODEL_URL =
+  'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 
 const CONNECTIONS: ReadonlyArray<readonly [number, number]> = [
-  [0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8],
-  [5, 9], [9, 10], [10, 11], [11, 12], [9, 13], [13, 14], [14, 15], [15, 16],
-  [13, 17], [17, 18], [18, 19], [19, 20], [0, 17],
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 4],
+  [0, 5],
+  [5, 6],
+  [6, 7],
+  [7, 8],
+  [5, 9],
+  [9, 10],
+  [10, 11],
+  [11, 12],
+  [9, 13],
+  [13, 14],
+  [14, 15],
+  [15, 16],
+  [13, 17],
+  [17, 18],
+  [18, 19],
+  [19, 20],
+  [0, 17],
 ];
 
 interface HandLandmarkerResult {
@@ -22,7 +42,9 @@ interface HandLandmarkerInstance {
 
 interface VisionModule {
   FilesetResolver: { forVisionTasks(wasmPath: string): Promise<unknown> };
-  HandLandmarker: { createFromOptions(vision: unknown, options: unknown): Promise<HandLandmarkerInstance> };
+  HandLandmarker: {
+    createFromOptions(vision: unknown, options: unknown): Promise<HandLandmarkerInstance>;
+  };
 }
 
 export class HandTracker {
@@ -34,7 +56,7 @@ export class HandTracker {
     try {
       // The CDN module is intentionally loaded only after the user starts the game.
       // @ts-ignore MediaPipe is loaded from a pinned CDN URL at runtime.
-      const vision = await import(/* @vite-ignore */ TASKS_VISION_CDN) as VisionModule;
+      const vision = (await import(/* @vite-ignore */ TASKS_VISION_CDN)) as VisionModule;
       const fileset = await vision.FilesetResolver.forVisionTasks(WASM_CDN);
       this.landmarker = await vision.HandLandmarker.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: HAND_MODEL_URL },
@@ -45,7 +67,10 @@ export class HandTracker {
         minTrackingConfidence: 0.5,
       });
     } catch {
-      throw this.createError('model', 'El takip modeli yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.');
+      throw this.createError(
+        'model',
+        'El takip modeli yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.',
+      );
     }
   }
 
@@ -65,7 +90,6 @@ export class HandTracker {
     this.lastVideoTime = -1;
     this.lastLandmarks = [];
   }
-
 
   private createError(status: HandTrackingError['status'], message: string): HandTrackingError {
     return { status, message };

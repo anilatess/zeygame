@@ -25,7 +25,11 @@ export type PlayerTracking = {
 };
 
 export type PlayerPose = { pose: NormalizedLandmark[] | null; detected: boolean };
-export type PlayerFace = { face: NormalizedLandmark[] | null; blend: Record<string, number>; detected: boolean };
+export type PlayerFace = {
+  face: NormalizedLandmark[] | null;
+  blend: Record<string, number>;
+  detected: boolean;
+};
 
 export type PlayersTracking = [PlayerTracking, PlayerTracking];
 

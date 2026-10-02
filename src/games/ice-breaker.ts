@@ -2,7 +2,15 @@ import type { MiniGame, PlayersTracking } from '../types';
 import { audio } from '../audio';
 import { toCanvasPoint, type VideoRect } from '../coordinate-mapper';
 
-type IceCube = { x: number; y: number; size: number; hits: number; age: number; owner: 0 | 1; lastHit: number };
+type IceCube = {
+  x: number;
+  y: number;
+  size: number;
+  hits: number;
+  age: number;
+  owner: 0 | 1;
+  lastHit: number;
+};
 
 const PLAYER_COLORS = ['#60a5fa', '#f472b6'] as const;
 const CUBE_LIFETIME = 4;
@@ -49,7 +57,12 @@ export class IceBreaker implements MiniGame {
         const x = point.x;
         const y = point.y;
         for (const cube of this.cubes) {
-          if (cube.owner !== playerIndex || !this.isInside(cube, x, y) || this.hitClock - cube.lastHit < HIT_COOLDOWN) continue;
+          if (
+            cube.owner !== playerIndex ||
+            !this.isInside(cube, x, y) ||
+            this.hitClock - cube.lastHit < HIT_COOLDOWN
+          )
+            continue;
           cube.lastHit = this.hitClock;
           cube.hits += 1;
           audio.tone(420, 0.045);
@@ -82,7 +95,9 @@ export class IceBreaker implements MiniGame {
     context.restore();
   }
 
-  getScores(): [number, number] { return [...this.scores]; }
+  getScores(): [number, number] {
+    return [...this.scores];
+  }
 
   private spawnCube(owner: 0 | 1): void {
     const minX = owner === 0 ? this.width * 0.08 : this.width * 0.58;
@@ -116,6 +131,8 @@ export class IceBreaker implements MiniGame {
       oscillator.connect(gain).connect(this.audioContext.destination);
       oscillator.start();
       oscillator.stop(this.audioContext.currentTime + duration);
-    } catch { /* Ses desteği yoksa oyun devam eder. */ }
+    } catch {
+      /* Ses desteği yoksa oyun devam eder. */
+    }
   }
 }

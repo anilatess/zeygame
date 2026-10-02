@@ -18,12 +18,17 @@ function load(relative) {
   const { outputText } = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   });
-  vm.runInNewContext(outputText, {
-    exports,
-    require: specifier => load(path.relative(root, path.resolve(path.dirname(filename), specifier + '.ts'))),
-    HTMLMediaElement: { HAVE_CURRENT_DATA: 2 },
-    window: { devicePixelRatio: 2 },
-  }, { filename });
+  vm.runInNewContext(
+    outputText,
+    {
+      exports,
+      require: (specifier) =>
+        load(path.relative(root, path.resolve(path.dirname(filename), specifier + '.ts'))),
+      HTMLMediaElement: { HAVE_CURRENT_DATA: 2 },
+      window: { devicePixelRatio: 2 },
+    },
+    { filename },
+  );
   return exports;
 }
 
@@ -36,25 +41,34 @@ const { GameManager } = load('src/game-manager.ts');
 const { IceBreaker } = load('src/games/ice-breaker.ts');
 const { FruitSlice } = load('src/games/fruit-slice.ts');
 const { MouthCatch } = load('src/games/mouth-catch.ts');
-const near = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-8, `${actual} != ${expected}`);
+const near = (actual, expected) =>
+  assert.ok(Math.abs(actual - expected) < 1e-8, `${actual} != ${expected}`);
 const landmark = { x: 0.6, y: 0.25, z: 0 };
 const hand = Array.from({ length: 21 }, () => ({ ...landmark }));
 const pose = Array.from({ length: 33 }, () => ({ ...landmark }));
 const face = Array.from({ length: 478 }, () => ({ ...landmark }));
 function players() {
   return [
-    { hands: [hand], pose: { pose, detected: true }, face: { face, blend: { jawOpen: 0.9 }, detected: true }, detected: true },
+    {
+      hands: [hand],
+      pose: { pose, detected: true },
+      face: { face, blend: { jawOpen: 0.9 }, detected: true },
+      detected: true,
+    },
     { hands: [], pose: null, face: { face: null, blend: {}, detected: false }, detected: false },
   ];
 }
 function surface(width, height) {
   const calls = [];
   const canvas = { width, height, clientWidth: width, clientHeight: height };
-  const context = new Proxy({ canvas }, {
-    get(target, key) {
-      return key in target ? target[key] : (...args) => calls.push([key, ...args]);
+  const context = new Proxy(
+    { canvas },
+    {
+      get(target, key) {
+        return key in target ? target[key] : (...args) => calls.push([key, ...args]);
+      },
     },
-  });
+  );
   canvas.getContext = () => context;
   return { canvas, context, calls };
 }
@@ -68,16 +82,23 @@ const cases = [
 ];
 for (const [width, height, dw, dh, ox, x, y] of cases) {
   const rect = getCoverRect(1280, 720, width, height);
-  near(rect.drawWidth, dw); near(rect.drawHeight, dh); near(rect.offsetX, ox); near(rect.offsetY, 0);
+  near(rect.drawWidth, dw);
+  near(rect.drawHeight, dh);
+  near(rect.offsetX, ox);
+  near(rect.offsetY, 0);
   const point = toCanvasPoint(landmark, rect);
-  near(point.x, x); near(point.y, y);
+  near(point.x, x);
+  near(point.y, y);
   const { canvas, context, calls } = surface(width, height);
   const video = { videoWidth: 1280, videoHeight: 720, readyState: 2, srcObject: {} };
   const camera = new CameraController(video, canvas);
   const frameRect = camera.draw();
-  const image = calls.find(call => call[0] === 'drawImage');
-  near(image[2], ox); near(image[3], 0); near(image[4], dw); near(image[5], dh);
-  assert.equal(calls.filter(call => call[0] === 'scale').length, 1);
+  const image = calls.find((call) => call[0] === 'drawImage');
+  near(image[2], ox);
+  near(image[3], 0);
+  near(image[4], dw);
+  near(image[5], dh);
+  assert.equal(calls.filter((call) => call[0] === 'scale').length, 1);
   for (const draw of [
     () => new PlayerTracker().drawLandmarks(canvas, players(), frameRect),
     () => new PoseTracker().draw(context, [{ pose, detected: true }], frameRect),
@@ -85,9 +106,12 @@ for (const [width, height, dw, dh, ox, x, y] of cases) {
   ]) {
     calls.length = 0;
     draw();
-    const points = calls.filter(call => ['arc', 'moveTo', 'lineTo'].includes(call[0]));
+    const points = calls.filter((call) => ['arc', 'moveTo', 'lineTo'].includes(call[0]));
     assert.ok(points.length);
-    for (const [, px, py] of points) { near(px, x); near(py, y); }
+    for (const [, px, py] of points) {
+      near(px, x);
+      near(py, y);
+    }
   }
 
   // Exercise real game updates through GameManager using controlled targets.
@@ -98,7 +122,9 @@ for (const [width, height, dw, dh, ox, x, y] of cases) {
     const ice = { x, y, size: 2, hits: 0, age: 0, owner: 0, lastHit: -Infinity };
     game.cubes = [ice];
     game.fruits = [{ x, y, radius: 2, vx: 0, vy: 0, owner: 0, age: 0, sliced: false, bomb: false }];
-    game.foods = [{ x, y: y + height * 0.07, size: 2, speed: 0, owner: 0, caught: false, kind: 'normal' }];
+    game.foods = [
+      { x, y: y + height * 0.07, size: 2, speed: 0, owner: 0, caught: false, kind: 'normal' },
+    ];
     const manager = new GameManager([game]);
     manager.state = 'PLAYING';
     const update = game.update.bind(game);
@@ -117,11 +143,13 @@ const { canvas } = surface(1280, 720);
 const video = { videoWidth: 1280, videoHeight: 720, readyState: 2, srcObject: {} };
 const camera = new CameraController(video, canvas);
 const before = camera.draw();
-canvas.clientWidth = 390; canvas.clientHeight = 844;
+canvas.clientWidth = 390;
+canvas.clientHeight = 844;
 camera.resize();
 const after = camera.draw();
 assert.notEqual(after, before);
-assert.equal(canvas.width, 780); assert.equal(canvas.height, 1688);
+assert.equal(canvas.width, 780);
+assert.equal(canvas.height, 1688);
 near(toCanvasPoint(landmark, after).x, 4046 / 45);
 near(toCanvasPoint(landmark, after).y, 422);
 assert.ok(toCanvasPoint({ x: 1, y: 0.5, z: 0 }, after).x < 0);
@@ -139,5 +167,6 @@ for (const wiring of [
   'poseTracker.draw(context, poses, rect)',
   'faceTracker.draw(context, faces, rect)',
   'playerTracker.drawLandmarks(canvas, players, rect)',
-]) assert.ok(main.includes(wiring), `Missing frame wiring: ${wiring}`);
+])
+  assert.ok(main.includes(wiring), `Missing frame wiring: ${wiring}`);
 console.log('PASS render rect wiring');

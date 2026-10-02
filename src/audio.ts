@@ -5,7 +5,9 @@ class AudioService {
     try {
       this.context ??= new AudioContext();
       if (this.context.state === 'suspended') void this.context.resume();
-    } catch { /* Ses yoksa oyun devam eder. */ }
+    } catch {
+      /* Ses yoksa oyun devam eder. */
+    }
   }
 
   tone(frequency: number, duration: number, volume = 0.04): void {
@@ -21,7 +23,9 @@ class AudioService {
       oscillator.connect(gain).connect(this.context.destination);
       oscillator.start();
       oscillator.stop(this.context.currentTime + duration);
-    } catch { /* Ses yoksa oyun devam eder. */ }
+    } catch {
+      /* Ses yoksa oyun devam eder. */
+    }
   }
 }
 
