@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { MiniGame } from '../types';
 import { ZeyHeader } from './ZeyHeader';
 import { GameIllustration, Mascot } from './ZeyVisuals';
+import { OnlineScreen } from './OnlineScreen';
 
 export type MenuScreen = 'menu' | 'games' | 'howto' | 'select' | 'solo-test' | 'online';
 
@@ -282,105 +283,6 @@ function GameLibrary({
         })}
       </section>
       <ZeyFooter />
-    </main>
-  );
-}
-
-function OnlineScreen({ onBack }: { onBack: () => void }) {
-  const [tab, setTab] = useState<'create' | 'join'>('create');
-  const [code, setCode] = useState('');
-  const [message, setMessage] = useState('');
-  const unavailable = () => setMessage('Online multiplayer yakında hazır!');
-  return (
-    <main className="zg-page online-page">
-      <ZeyHeader onHome={onBack} />
-      <div className="online-layout">
-        <section className="online-intro">
-          <span className="zg-sticker yellow">CANLI BAĞLANTI</span>
-          <h1>
-            Uzaktan ol.
-            <br />
-            <em>Oyunda kal.</em>
-          </h1>
-          <p>Arkadaşın nerede olursa olsun, aynı arenada buluşun.</p>
-          <div className="player-link">
-            <div className="player-chip purple">
-              <Mascot />
-              <strong>ANIL</strong>
-            </div>
-            <span>
-              <b>VİYUV!</b>
-            </span>
-            <div className="player-chip blue">
-              <Mascot mood="winner" />
-              <strong>ARKADAŞ</strong>
-            </div>
-          </div>
-        </section>
-        <section className="online-panel">
-          <div className="online-tabs" role="tablist">
-            <button
-              role="tab"
-              aria-selected={tab === 'create'}
-              onClick={() => {
-                setTab('create');
-                setMessage('');
-              }}
-            >
-              Oda Oluştur
-            </button>
-            <button
-              role="tab"
-              aria-selected={tab === 'join'}
-              onClick={() => {
-                setTab('join');
-                setMessage('');
-              }}
-            >
-              Odaya Katıl
-            </button>
-          </div>
-          <div className="online-content">
-            <div className="online-icon">
-              <Mascot />
-            </div>
-            {tab === 'create' ? (
-              <>
-                <h2>Kendi odanı kur</h2>
-                <p>Sana özel oda kodunu arkadaşınla paylaş. O katılınca oyun başlasın.</p>
-                <div className="benefits">
-                  <span>✓ Özel, güvenli oda</span>
-                  <span>✓ Anında bağlantı</span>
-                </div>
-                <button className="zg-button primary" onClick={unavailable}>
-                  ODA OLUŞTUR →
-                </button>
-              </>
-            ) : (
-              <>
-                <h2>Arkadaşına katıl</h2>
-                <p>6 haneli oda kodunu gir ve arenadaki yerini al.</p>
-                <label htmlFor="room-code">ODA KODU</label>
-                <input
-                  id="room-code"
-                  value={code}
-                  onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  placeholder="583921"
-                  maxLength={6}
-                />
-                <button className="zg-button primary" onClick={unavailable}>
-                  ODAYA KATIL →
-                </button>
-              </>
-            )}
-            <p className="online-message" role="status" aria-live="polite">
-              {message}
-            </p>
-          </div>
-        </section>
-      </div>
     </main>
   );
 }

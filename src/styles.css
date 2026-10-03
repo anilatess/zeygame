@@ -727,6 +727,204 @@ strong,
   box-shadow: 4px 5px 0 var(--zg-ink);
   margin-bottom: 18px;
 }
+.online-content input.name-input {
+  font-size: 18px;
+  letter-spacing: 0;
+  text-align: left;
+  background: var(--zg-cream);
+}
+
+.lobby-page {
+  padding-bottom: 60px;
+}
+.lobby-heading {
+  padding: 45px 0 20px;
+  text-align: center;
+}
+.lobby-heading h1 {
+  margin: 12px 0 0;
+  font-size: clamp(48px, 7vw, 76px);
+  line-height: 0.95;
+}
+.lobby-heading p {
+  color: #6f6878;
+  font-weight: 700;
+}
+.room-code-card {
+  width: min(650px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 17px 20px;
+  background: var(--zg-yellow);
+  border: var(--zg-border);
+  border-radius: 20px;
+  box-shadow: var(--zg-shadow);
+}
+.room-code-card > span {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+.room-code-card > strong {
+  text-align: center;
+  font-size: 42px;
+  letter-spacing: 0.18em;
+  line-height: 1;
+}
+.copy-notice {
+  min-height: 25px;
+  margin: 13px 0 0;
+  text-align: center;
+  color: #34725e;
+  font-weight: 900;
+}
+.lobby-connection {
+  width: max-content;
+  margin: 8px auto 28px;
+  padding: 6px 12px;
+  background: var(--zg-cream);
+  border: 2px solid var(--zg-ink);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+}
+.lobby-connection i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  background: var(--zg-coral);
+  border: 1px solid var(--zg-ink);
+  border-radius: 50%;
+}
+.lobby-connection i.online {
+  background: #62d3a8;
+}
+.lobby-players {
+  width: min(820px, 100%);
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr;
+  align-items: center;
+  gap: 25px;
+}
+.lobby-player {
+  min-width: 0;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px;
+  background: var(--zg-purple);
+  border: var(--zg-border);
+  border-radius: 24px;
+  box-shadow: var(--zg-shadow);
+  text-align: center;
+  transition: transform 0.18s ease;
+}
+.lobby-player.slot-2,
+.lobby-player.empty {
+  background: var(--zg-blue);
+}
+.lobby-player.ready {
+  transform: translateY(-5px) rotate(-0.5deg);
+  outline: 5px solid var(--zg-yellow);
+}
+.lobby-player.empty {
+  opacity: 0.72;
+  border-style: dashed;
+}
+.lobby-mascot {
+  width: 145px;
+  height: 145px;
+}
+.lobby-player > span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+.lobby-player .zg-sticker {
+  padding: 2px 6px;
+  font-size: 8px;
+}
+.lobby-player > strong {
+  width: 100%;
+  overflow: hidden;
+  font-size: 27px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lobby-player > small {
+  margin-top: 5px;
+  padding: 5px 10px;
+  background: var(--zg-cream);
+  border: 2px solid var(--zg-ink);
+  border-radius: 999px;
+  font-weight: 900;
+}
+.lobby-player > small.ready-label {
+  background: var(--zg-yellow);
+}
+.lobby-player > em {
+  margin-top: auto;
+  color: #6c3241;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
+.lobby-player > em.connected {
+  color: #245f50;
+}
+.lobby-vs {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  background: var(--zg-coral);
+  border: var(--zg-border);
+  border-radius: 50%;
+  box-shadow: var(--zg-shadow-sm);
+  color: white;
+  font-weight: 900;
+  transform: rotate(-5deg);
+}
+.lobby-actions {
+  width: min(650px, 100%);
+  margin: 35px auto 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.ready-button.is-ready {
+  background: #7edbb9;
+}
+.start-online:disabled {
+  background: #d8d2c8;
+  cursor: not-allowed;
+}
+.leave-room {
+  grid-column: 1 / -1;
+  justify-self: center;
+  border: 0;
+  border-bottom: 2px solid var(--zg-ink);
+  background: transparent;
+  padding: 5px;
+  font-size: 11px;
+  font-weight: 900;
+}
+.host-wait {
+  margin: 0;
+  display: grid;
+  place-items: center;
+  color: #6f6878;
+  font-weight: 800;
+}
 .simple-heading {
   text-align: center;
   padding: 70px 0 45px;
@@ -1321,6 +1519,33 @@ strong,
   }
   .online-content input {
     font-size: 22px;
+  }
+  .room-code-card {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    text-align: center;
+  }
+  .room-code-card > strong {
+    font-size: 35px;
+  }
+  .lobby-players {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .lobby-vs {
+    position: relative;
+    z-index: 2;
+    margin: -34px auto;
+  }
+  .lobby-player {
+    min-height: 250px;
+  }
+  .lobby-mascot {
+    width: 110px;
+    height: 110px;
+  }
+  .lobby-actions {
+    grid-template-columns: 1fr;
   }
   .zg-page::after {
     width: 55px;
