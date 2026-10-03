@@ -4,8 +4,8 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#101827",
-  "theme_color": "#101827",
+  "background_color": "#fffaf0",
+  "theme_color": "#fffaf0",
   "description": "Kamera kontrollü iki kişilik parti oyunları.",
   "orientation": "any",
   "icons": [{ "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]

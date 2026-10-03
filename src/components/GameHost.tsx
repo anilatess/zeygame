@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { GameController } from '../game-controller';
 import type { MiniGame } from '../types';
+import { Mascot } from './ZeyVisuals';
 
 type Props = {
   controllerRef: React.MutableRefObject<GameController | null>;
@@ -100,18 +101,27 @@ function GameOverlay({
       </div>
       <div className="play-hud" hidden>
         <div className="hud-player player-one">
-          <span>Oyuncu 1</span>
+          <span>OYUNCU 1</span>
           <strong data-ui="score-one">0</strong>
         </div>
         <div className="hud-time">
-          <span>Kalan süre</span>
+          <span data-ui="hud-game">ZEYGAME</span>
           <strong data-ui="time" />
         </div>
         <div className="hud-player player-two">
-          <span>Oyuncu 2</span>
+          <span>OYUNCU 2</span>
           <strong data-ui="score-two">0</strong>
         </div>
       </div>
+      <span className="game-vs" aria-hidden="true" hidden>
+        VS
+      </span>
+      <span className="tracking-pill" hidden>
+        <i /> HAREKET ALGILANIYOR
+      </span>
+      <span className="keep-going" hidden>
+        <small>SON 10 SANİYE</small>Devam et!
+      </span>
       <div className="countdown-screen" hidden>
         <div className="round-intro">
           <span className="eyebrow">SIRADAKİ MEYDAN OKUMA</span>
@@ -122,7 +132,12 @@ function GameOverlay({
         <span className="countdown-hint">Hazır ol, hareket sırası sende!</span>
       </div>
       <div className="result-screen" hidden>
+        <span className="confetti confetti-one" aria-hidden="true" />
+        <span className="confetti confetti-two" aria-hidden="true" />
         <section className="result-card" aria-labelledby="result-title">
+          <div className="winner-mascot">
+            <Mascot mood="winner" />
+          </div>
           <div className="eyebrow" data-ui="result-kicker" />
           <h2 id="result-title" tabIndex={-1} data-ui="result-title" />
           <p className="winner-label" data-ui="winner" role="status" aria-live="polite" />
@@ -151,6 +166,10 @@ function GameOverlay({
             </button>
           </div>
         </section>
+        <div className="rematch-mascot">
+          <Mascot mood="sad" />
+          <span>Rövanş?</span>
+        </div>
       </div>
     </div>
   );

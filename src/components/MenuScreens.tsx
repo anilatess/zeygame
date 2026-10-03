@@ -1,25 +1,9 @@
+import { useState } from 'react';
 import type { MiniGame } from '../types';
+import { ZeyHeader } from './ZeyHeader';
+import { GameIllustration, Mascot } from './ZeyVisuals';
 
-export type MenuScreen = 'menu' | 'games' | 'howto' | 'select' | 'solo-test';
-
-const illustrations: Record<string, string> = {
-  'Buz Kırma':
-    '<path d="m32 20 28-10 28 18-28 12Z M32 20v42l28 22 28-16V28 M60 40v44 M48 28l8 16-10 12 12 12"/>',
-  'Meyve Kesme':
-    '<path d="M61 28q-8-18 13-20 M62 28q-27-13-35 17t26 37q7-5 14 0 31-9 25-37T62 28Z M16 78l82-60"/>',
-  'Çömelme Yarışı':
-    '<circle cx="58" cy="22" r="10"/><path d="m55 36-18 18 24 8-15 22 M55 36l16 22 18-5 M61 62l18 20 M18 88h78"/>',
-  'Zıplama Yarışı':
-    '<circle cx="60" cy="20" r="10"/><path d="M60 34v24 M60 39 34 24 M60 39l25-17 M60 58 39 75 M60 58l24 14 M25 93l5-9 M60 96v-12 M94 93l-5-9"/>',
-  'Dans Taklidi':
-    '<circle cx="60" cy="20" r="10"/><path d="m60 34-7 26 24 23 M56 46 30 36 20 17 M56 46l26-12 15 9 M53 60 35 83 M93 15v13 M93 15l10-3"/>',
-  'Ağız Açma Yarışı':
-    '<rect x="28" y="12" width="64" height="80" rx="28"/><path d="M43 36h3 M74 36h3"/><ellipse cx="60" cy="65" rx="13" ry="18"/>',
-  'Surat Taklidi':
-    '<rect x="23" y="15" width="74" height="76" rx="30"/><path d="m37 38 12-5 M72 33l12 5 M38 49h9 M73 49h9 M42 64q18 24 36 0"/>',
-  'Ağızla Yakala':
-    '<path d="M25 61q35-30 70 0-35 49-70 0Z M39 62h42 M60 40V23 M50 32l10 10 10-10"/><circle cx="60" cy="12" r="7"/>',
-};
+export type MenuScreen = 'menu' | 'games' | 'howto' | 'select' | 'solo-test' | 'online';
 
 export function MainMenu({
   gameCount,
@@ -35,71 +19,132 @@ export function MainMenu({
   onStartParty: () => void;
 }) {
   return (
-    <div className="menu-card">
-      <header className="menu-top">
-        <span className="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</span>
-        <span className="game-count">{gameCount} mini oyun</span>
-      </header>
-      <div className="menu-home">
-        <div className="hero-copy">
+    <main className="zg-page zg-home">
+      <ZeyHeader gameCount={gameCount} />
+      <section className="zg-hero">
+        <div className="zg-hero-copy">
+          <div className="zg-kicker">
+            <span className="zg-sticker coral">YENİ!</span> KUMANDASIZ PARTİ OYUNU
+          </div>
           <h1>
-            Zey<span>Game</span>
-            <i aria-hidden="true">✦</i>
+            Hareket et,
+            <br />
+            <em>kahkahayı kap!</em>
           </h1>
-          <h2>
-            Kamera açık, <br />
-            rekabet başlasın!
-          </h2>
-          <p>Yan yana gelin, hareketlerinizle yarışın.</p>
-          <div className="menu-actions">
-            <button className="primary" data-action="start" disabled={busy} onClick={onStartParty}>
-              Partiyi Başlat ↗
-            </button>
-            <button data-action="select" onClick={() => onNavigate('select')}>
-              Oyun Seç
-            </button>
-            <button data-action="solo-test" onClick={() => onNavigate('solo-test')}>
-              Tek Kişilik Test
-            </button>
-            <button data-action="games" onClick={() => onNavigate('games')}>
-              Oyunları Keşfet
-            </button>
-            <button data-action="howto" onClick={() => onNavigate('howto')}>
-              Nasıl Oynanır?
-            </button>
-          </div>
-          <p className="status" role="alert" aria-live="polite">
-            {status}
-          </p>
+          <p>Kontrolcü yok. Sadece sen, arkadaşların ve birbirinden komik hareketler var.</p>
         </div>
-        <div className="party-art">
-          <div className="art-caption">AYNI KAMERA. İKİ RAKİP.</div>
-          <div className="players">
-            <div className="player blue">
-              <div className="avatar" aria-hidden="true">
-                <span />
-              </div>
-              <strong>Oyuncu 1</strong>
-              <small>Sol tarafta</small>
-            </div>
-            <span className="versus" aria-hidden="true">
-              VS
-            </span>
-            <div className="player pink">
-              <div className="avatar" aria-hidden="true">
-                <span />
-              </div>
-              <strong>Oyuncu 2</strong>
-              <small>Sağ tarafta</small>
-            </div>
-          </div>
-          <div className="art-footer">✦ Hareket sende, parti burada!</div>
+        <div className="zg-hero-mascot">
+          <Mascot mood="hello" />
+          <span className="speech">
+            Selam!
+            <br />
+            Hazır mısın?
+          </span>
         </div>
+      </section>
+      <section className="mode-grid" aria-label="Oyun modları">
+        <ModeCard
+          number="01"
+          tone="purple"
+          label="YEREL MOD"
+          title="AYNI EKRANDA OYNA"
+          description="Tek kamera, iki oyuncu, bol rekabet."
+          action="Hadi gidelim!"
+          disabled={busy}
+          onClick={onStartParty}
+        >
+          <GameIllustration name="Dans Taklidi" />
+        </ModeCard>
+        <ModeCard
+          number="02"
+          tone="blue"
+          label="UZAKTAN MULTİPLAYER"
+          title="ONLINE OYNA"
+          description="Oda kur, kodu paylaş, arkadaşınla kapış."
+          action="Hadi gidelim!"
+          badge="EN HEYECANLI"
+          onClick={() => onNavigate('online')}
+        >
+          <Mascot />
+        </ModeCard>
+        <ModeCard
+          number="03"
+          tone="pink"
+          label="ANTRENMAN"
+          title="TEK KİŞİLİK TEST"
+          description="Kameranı dene ve hareketlerini ısıt."
+          action="Hadi gidelim!"
+          onClick={() => onNavigate('solo-test')}
+        >
+          <GameIllustration name="Surat Taklidi" />
+        </ModeCard>
+      </section>
+      <div className="home-shortcuts">
+        <button onClick={() => onNavigate('select')}>Bir oyun seç</button>
+        <button onClick={() => onNavigate('games')}>Oyunları keşfet</button>
+        <button onClick={() => onNavigate('howto')}>Nasıl oynanır?</button>
       </div>
-      <footer className="menu-footer">
-        2 oyuncu <span>•</span> 1 kamera <span>•</span> Bol rekabet
-      </footer>
-    </div>
+      <p className="status" role="alert" aria-live="polite">
+        {status}
+      </p>
+      <section className="feature-strip">
+        <div>
+          <i className="dot" />
+          <strong>Kamera seni görüyor!</strong>
+          <span>Takla ve oyna</span>
+        </div>
+        <div>
+          <strong>Kurulum yok</strong>
+          <span>Tıkla ve oyna</span>
+        </div>
+        <div>
+          <strong>{gameCount} çılgın oyun</strong>
+          <span>Her hareket bir puan</span>
+        </div>
+      </section>
+      <ZeyFooter />
+    </main>
+  );
+}
+
+function ModeCard({
+  number,
+  tone,
+  label,
+  title,
+  description,
+  action,
+  badge,
+  onClick,
+  disabled,
+  children,
+}: {
+  number: string;
+  tone: string;
+  label: string;
+  title: string;
+  description: string;
+  action: string;
+  badge?: string;
+  onClick: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      className={`mode-card ${tone}`}
+      onClick={onClick}
+      disabled={disabled}
+      data-action={number === '01' ? 'start' : undefined}
+    >
+      {badge && <span className="zg-sticker yellow card-badge">{badge}</span>}
+      <span className="mode-art">{children}</span>
+      <span className="zg-pill">{label}</span>
+      <strong>{title}</strong>
+      <small>{description}</small>
+      <span className="mode-action">{action} →</span>
+      <b aria-hidden="true">{number}</b>
+    </button>
   );
 }
 
@@ -118,158 +163,264 @@ export function InfoScreen({
   onBack: () => void;
   onPlay: (index: number, solo: boolean) => void;
 }) {
+  if (kind === 'online') return <OnlineScreen onBack={onBack} />;
   if (kind === 'howto') return <HowTo gameCount={games.length} onBack={onBack} />;
-  const selectable = kind === 'select' || kind === 'solo-test';
-  const solo = kind === 'solo-test';
-  const heading = solo
-    ? [
-        'GELİŞTİRİCİ MODU',
-        'Tek Kişilik Test',
-        'Bir mini oyun seç; kamera yalnızca seni Player 1 olarak izlesin.',
-      ]
-    : kind === 'select'
-      ? ['İKİ KİŞİ, TEK MEYDAN OKUMA', 'Oyun Seç', 'Bir oyun seçin, yan yana yarışın.']
-      : [
-          'PARTİDE NELER VAR?',
-          'Oyunları Keşfet',
-          'Her tur yeni bir meydan okuma. Hepsi aynı partide!',
-        ];
-  const labels = selectable
-    ? { hands: 'El', pose: 'Vücut', face: 'Yüz' }
-    : { hands: 'El hareketleri', pose: 'Vücut hareketleri', face: 'Yüz ifadeleri' };
   return (
-    <div className="menu-card">
-      <MenuHeader gameCount={games.length} />
-      <section className="info-panel" aria-labelledby="info-title">
-        <button data-action="back" onClick={onBack}>
-          ← Ana Menü
-        </button>
-        <div className="info-content">
-          <div className="section-heading">
-            <div className="eyebrow">{heading[0]}</div>
-            <h2 id="info-title" tabIndex={-1}>
-              {heading[1]}
-            </h2>
-            <p>{heading[2]}</p>
-          </div>
-          {selectable && (
-            <p className="selection-status" role="alert" aria-live="polite">
-              {status}
-            </p>
-          )}
-          <div className="game-grid">
-            {games.map((miniGame, index) => (
-              <article className={`game-card ${miniGame.tracking}`} key={miniGame.name}>
-                <Illustration name={miniGame.name} />
-                <span className="tracking-label">
-                  {labels[miniGame.needs ?? miniGame.tracking]}
-                </span>
-                <h3>{miniGame.name}</h3>
-                <p>{miniGame.description.split(/(?<=\.)\s/)[0]}</p>
-                {selectable && (
-                  <button
-                    data-action="play-selected"
-                    data-game-index={index}
-                    data-solo={solo}
-                    disabled={busy}
-                    aria-label={`${miniGame.name} — ${solo ? 'Solo Testi Başlat' : 'Bu Oyunu Oyna'}`}
-                    onClick={() => onPlay(index, solo)}
-                  >
-                    {solo ? 'Solo Testi Başlat' : 'Bu Oyunu Oyna'}
-                  </button>
-                )}
-              </article>
-            ))}
-          </div>
+    <GameLibrary
+      kind={kind}
+      games={games}
+      status={status}
+      busy={busy}
+      onBack={onBack}
+      onPlay={onPlay}
+    />
+  );
+}
+
+type Category = 'Tümü' | 'Refleks' | 'Fitness' | 'Yüz' | 'Ritim';
+const categories: Record<string, Category> = {
+  'Buz Kırma': 'Refleks',
+  'Meyve Kesme': 'Refleks',
+  'Ağızla Yakala': 'Refleks',
+  'Çömelme Yarışı': 'Fitness',
+  'Zıplama Yarışı': 'Fitness',
+  'Ağız Açma Yarışı': 'Yüz',
+  'Surat Taklidi': 'Yüz',
+  'Dans Taklidi': 'Ritim',
+};
+const tones: Record<string, string> = {
+  'Buz Kırma': 'cyan',
+  'Çömelme Yarışı': 'purple',
+  'Ağız Açma Yarışı': 'pink',
+  'Meyve Kesme': 'orange',
+  'Zıplama Yarışı': 'blue',
+  'Dans Taklidi': 'green',
+  'Surat Taklidi': 'yellow',
+  'Ağızla Yakala': 'coral',
+};
+
+function GameLibrary({
+  kind,
+  games,
+  status,
+  busy,
+  onBack,
+  onPlay,
+}: {
+  kind: 'games' | 'select' | 'solo-test';
+  games: readonly MiniGame[];
+  status: string;
+  busy: boolean;
+  onBack: () => void;
+  onPlay: (index: number, solo: boolean) => void;
+}) {
+  const [filter, setFilter] = useState<Category>('Tümü');
+  const solo = kind === 'solo-test';
+  const selectable = kind !== 'games';
+  return (
+    <main className="zg-page library-page">
+      <ZeyHeader onHome={onBack} />
+      <section className="library-heading">
+        <div>
+          <span className="zg-sticker yellow">01 / OYUN KÜTÜPHANESİ</span>
+          <h1>
+            {solo ? 'Tek Kişilik Test' : kind === 'games' ? 'Oyunları Keşfet' : 'Bir Oyun Seç'}
+          </h1>
         </div>
+        <p>
+          {solo
+            ? 'Kameranı hazırla ve bir oyunda tek başına ustalaş.'
+            : 'Hazır mısın? Hareket alanını aç ve meydan okumayı seç.'}
+        </p>
       </section>
-      <MenuFooter />
-    </div>
+      <div className="filter-pills" aria-label="Oyun kategorileri">
+        {(['Tümü', 'Refleks', 'Fitness', 'Yüz', 'Ritim'] as Category[]).map((category) => (
+          <button
+            key={category}
+            className={filter === category ? 'active' : ''}
+            aria-pressed={filter === category}
+            onClick={() => setFilter(category)}
+          >
+            {category}
+            {category === 'Tümü' ? ` ${games.length}` : ''}
+          </button>
+        ))}
+      </div>
+      <p className="selection-status" role="alert" aria-live="polite">
+        {status}
+      </p>
+      <section className="game-grid">
+        {games.map((miniGame, index) => {
+          const category = categories[miniGame.name] ?? 'Refleks';
+          if (filter !== 'Tümü' && filter !== category) return null;
+          return (
+            <button
+              className={`game-card ${tones[miniGame.name] ?? 'cyan'}`}
+              key={miniGame.name}
+              data-action={selectable ? 'play-selected' : undefined}
+              data-game-index={index}
+              data-solo={solo}
+              disabled={!selectable || busy}
+              aria-label={
+                selectable
+                  ? `${miniGame.name} — ${solo ? 'Solo Testi Başlat' : 'Bu Oyunu Oyna'}`
+                  : undefined
+              }
+              onClick={() => selectable && onPlay(index, solo)}
+            >
+              <span className="zg-sticker coral pow">POW!</span>
+              <GameIllustration name={miniGame.name} />
+              <span className="game-meta">
+                <span className="zg-pill">{category}</span>
+                <small>{solo ? '1 OYUNCU' : '1–2 OYUNCU'}</small>
+              </span>
+              <strong>{miniGame.name}</strong>
+              <span className="game-description">{miniGame.description.split(/(?<=\.)\s/)[0]}</span>
+              <span className="game-action">{selectable ? 'BUNU SEÇ →' : 'DETAYLARI GÖR →'}</span>
+            </button>
+          );
+        })}
+      </section>
+      <ZeyFooter />
+    </main>
+  );
+}
+
+function OnlineScreen({ onBack }: { onBack: () => void }) {
+  const [tab, setTab] = useState<'create' | 'join'>('create');
+  const [code, setCode] = useState('');
+  const [message, setMessage] = useState('');
+  const unavailable = () => setMessage('Online multiplayer yakında hazır!');
+  return (
+    <main className="zg-page online-page">
+      <ZeyHeader onHome={onBack} />
+      <div className="online-layout">
+        <section className="online-intro">
+          <span className="zg-sticker yellow">CANLI BAĞLANTI</span>
+          <h1>
+            Uzaktan ol.
+            <br />
+            <em>Oyunda kal.</em>
+          </h1>
+          <p>Arkadaşın nerede olursa olsun, aynı arenada buluşun.</p>
+          <div className="player-link">
+            <div className="player-chip purple">
+              <Mascot />
+              <strong>ANIL</strong>
+            </div>
+            <span>
+              <b>VİYUV!</b>
+            </span>
+            <div className="player-chip blue">
+              <Mascot mood="winner" />
+              <strong>ARKADAŞ</strong>
+            </div>
+          </div>
+        </section>
+        <section className="online-panel">
+          <div className="online-tabs" role="tablist">
+            <button
+              role="tab"
+              aria-selected={tab === 'create'}
+              onClick={() => {
+                setTab('create');
+                setMessage('');
+              }}
+            >
+              Oda Oluştur
+            </button>
+            <button
+              role="tab"
+              aria-selected={tab === 'join'}
+              onClick={() => {
+                setTab('join');
+                setMessage('');
+              }}
+            >
+              Odaya Katıl
+            </button>
+          </div>
+          <div className="online-content">
+            <div className="online-icon">
+              <Mascot />
+            </div>
+            {tab === 'create' ? (
+              <>
+                <h2>Kendi odanı kur</h2>
+                <p>Sana özel oda kodunu arkadaşınla paylaş. O katılınca oyun başlasın.</p>
+                <div className="benefits">
+                  <span>✓ Özel, güvenli oda</span>
+                  <span>✓ Anında bağlantı</span>
+                </div>
+                <button className="zg-button primary" onClick={unavailable}>
+                  ODA OLUŞTUR →
+                </button>
+              </>
+            ) : (
+              <>
+                <h2>Arkadaşına katıl</h2>
+                <p>6 haneli oda kodunu gir ve arenadaki yerini al.</p>
+                <label htmlFor="room-code">ODA KODU</label>
+                <input
+                  id="room-code"
+                  value={code}
+                  onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="583921"
+                  maxLength={6}
+                />
+                <button className="zg-button primary" onClick={unavailable}>
+                  ODAYA KATIL →
+                </button>
+              </>
+            )}
+            <p className="online-message" role="status" aria-live="polite">
+              {message}
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }
 
 function HowTo({ gameCount, onBack }: { gameCount: number; onBack: () => void }) {
   return (
-    <div className="menu-card">
-      <MenuHeader gameCount={gameCount} />
-      <section className="info-panel" aria-labelledby="info-title">
-        <button data-action="back" onClick={onBack}>
-          ← Ana Menü
-        </button>
-        <div className="info-content">
-          <div className="section-heading">
-            <div className="eyebrow">HAZIR, YERLEŞ, OYNA!</div>
-            <h2 id="info-title" tabIndex={-1}>
-              Nasıl Oynanır?
-            </h2>
-            <p>Üç küçük adım, kocaman bir parti.</p>
-          </div>
-          <div className="steps">
-            <article>
-              <span className="step-number">01</span>
-              <svg viewBox="0 0 120 104" aria-hidden="true">
-                <rect x="32" y="10" width="56" height="68" rx="8" />
-                <path d="M60 78v16 M36 94h48 M48 20h24" />
-              </svg>
-              <h3>Cihazı sabitle.</h3>
-            </article>
-            <article>
-              <span className="step-number">02</span>
-              <Illustration name="Surat Taklidi" />
-              <h3>İki kişi kameraya yerleş.</h3>
-              <p>
-                <span className="blue-text">Oyuncu 1 solda</span>
-                <br />
-                <span className="pink-text">Oyuncu 2 sağda</span>
-              </p>
-            </article>
-            <article>
-              <span className="step-number">03</span>
-              <Illustration name="Dans Taklidi" />
-              <h3>Hareket et, puanları topla.</h3>
-            </article>
-          </div>
-          <div className="tips">
-            <p>☀ İyi aydınlatılmış bir ortam kullan.</p>
-            <p>↔ Vücut oyunları için çevrende yeterli hareket alanı bırak.</p>
-          </div>
-        </div>
+    <main className="zg-page howto-page">
+      <ZeyHeader onHome={onBack} />
+      <section className="simple-heading">
+        <span className="zg-sticker yellow">HAZIR, YERLEŞ, OYNA!</span>
+        <h1>Nasıl Oynanır?</h1>
+        <p>Üç küçük adım, kocaman bir parti.</p>
       </section>
-      <MenuFooter />
-    </div>
+      <div className="steps">
+        <article>
+          <b>01</b>
+          <h2>Cihazı sabitle.</h2>
+          <p>Kameranın iki oyuncuyu da gördüğünden emin ol.</p>
+        </article>
+        <article>
+          <b>02</b>
+          <h2>Yan yana yerleş.</h2>
+          <p>Oyuncu 1 solda, Oyuncu 2 sağda dursun.</p>
+        </article>
+        <article>
+          <b>03</b>
+          <h2>Hareket et!</h2>
+          <p>{gameCount} oyunda puanları topla ve partiyi kazan.</p>
+        </article>
+      </div>
+      <ZeyFooter />
+    </main>
   );
 }
 
-function MenuHeader({ gameCount }: { gameCount: number }) {
+function ZeyFooter() {
   return (
-    <header className="menu-top">
-      <span className="eyebrow">İKİ KİŞİLİK KAMERA PARTİSİ</span>
-      <span className="game-count">{gameCount} mini oyun</span>
-    </header>
-  );
-}
-
-function MenuFooter() {
-  return (
-    <footer className="menu-footer">
-      2 oyuncu <span>•</span> 1 kamera <span>•</span> Bol rekabet
+    <footer className="zg-footer">
+      <strong>ZeyGame</strong>
+      <span>Hareketle başlar.</span>
     </footer>
-  );
-}
-
-function Illustration({ name }: { name: string }) {
-  return (
-    <div className="game-illustration">
-      <svg
-        viewBox="0 0 120 104"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-        dangerouslySetInnerHTML={{ __html: illustrations[name] ?? '' }}
-      />
-    </div>
   );
 }

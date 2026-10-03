@@ -36,6 +36,9 @@ export class GameUI {
       '.countdown-screen',
       '.result-screen',
       '.final-actions',
+      '.game-vs',
+      '.tracking-pill',
+      '.keep-going',
     ])
       this.node(selector).hidden = true;
   }
@@ -51,6 +54,11 @@ export class GameUI {
     this.node('.countdown-screen').hidden = state !== 'COUNTDOWN' || !modelReady;
     this.node('.result-screen').hidden = state !== 'RESULT' && state !== 'FINAL';
     this.node('.final-actions').hidden = state !== 'FINAL';
+    this.node('.game-vs').hidden = state !== 'PLAYING';
+    this.node('.tracking-pill').hidden =
+      state !== 'PLAYING' ||
+      !players.some((player) => player.detected || player.pose?.detected || player.face.detected);
+    this.node('.keep-going').hidden = state !== 'PLAYING' || manager.getRemainingTime() > 10;
     const single = manager.getSession().mode !== 'party';
     const solo = manager.isSoloTest();
     this.node('[data-action="choose-another"]').hidden = state !== 'FINAL' || !single;
@@ -105,6 +113,7 @@ export class GameUI {
       this.text('countdown', String(manager.getCountdown()));
     } else if (state === 'PLAYING') {
       const scores = manager.getLiveScores();
+      this.text('hud-game', manager.getGameName());
       this.text('score-one', String(scores[0]));
       this.text('score-two', String(scores[1]));
       this.text('time', `${manager.getRemainingTime()} sn`);
