@@ -159,14 +159,14 @@ assert.equal(camera.draw(), null, 'Not-ready video must not produce a rect');
 console.log('PASS resize, DPR=2, unclamped crop and zero video dimensions');
 
 // Verify the render entry point forwards its camera rect to every consumer.
-const main = fs.readFileSync(path.join(root, 'src/main.ts'), 'utf8');
+const main = fs.readFileSync(path.join(root, 'src/game-controller.ts'), 'utf8');
 for (const wiring of [
-  'const rect = camera.draw()',
+  'const rect = this.camera.draw()',
   'if (!rect)',
-  'manager.update(dt, players, canvas.width, canvas.height, rect, modelReady)',
-  'poseTracker.draw(context, poses, rect)',
-  'faceTracker.draw(context, faces, rect)',
-  'playerTracker.drawLandmarks(canvas, players, rect)',
+  'this.manager.update(',
+  'this.poseTracker.draw(context, poses, rect)',
+  'this.faceTracker.draw(context, faces, rect)',
+  'this.playerTracker.drawLandmarks(this.elements.canvas, players, rect)',
 ])
   assert.ok(main.includes(wiring), `Missing frame wiring: ${wiring}`);
 console.log('PASS render rect wiring');

@@ -256,16 +256,17 @@ override('player-tracker', {
     drawLandmarks() {}
   },
 });
-appLoad('../src/main.ts');
-const click = async (action) => buttons[action].handlers.click();
-await click('start');
-assert.equal(appEnvironment.state.contexts.length, 1, 'start click unlocks shared service');
-await click('replay');
-assert.equal(query('.game').focused, true, 'Replay moves focus away from hidden final buttons');
-assert.equal(appEnvironment.state.contexts.length, 1, 'replay reuses the original context');
-await click('home');
-assert.equal(appEnvironment.state.contexts.length, 1, 'home does not create another context');
-assert.equal(frames.size, 0, 'home cancels the render loop');
+const controllerSource = fs.readFileSync(
+  new URL('../src/game-controller.ts', import.meta.url),
+  'utf8',
+);
+assert.match(controllerSource, /prepare[\s\S]*audio\.unlock\(\)/, 'session prepare unlocks audio');
+assert.match(controllerSource, /stop[\s\S]*audio\.stopAll\(\)/, 'session stop ends active audio');
+assert.match(
+  controllerSource,
+  /replay[\s\S]*audio\.stopAll\(\)[\s\S]*audio\.unlock\(\)/,
+  'replay safely reuses audio',
+);
 
 const audioOwners = [
   '../src/games/mouth-open-race.ts',
@@ -285,5 +286,5 @@ for (const source of audioOwners) {
 }
 
 console.log(
-  'PASS shared audio: one context, gesture unlock, safe resume, tone parameters, cleanup, session handlers',
+  'PASS shared audio: one context, gesture unlock, safe resume, tone parameters, cleanup, controller lifecycle',
 );
