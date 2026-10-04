@@ -104,7 +104,7 @@ export function OnlineScreen({
             </button>
           </div>
           <div className="online-content">
-            <div className="online-icon">
+            <div className="online-icon online-entry-mascot">
               <Mascot />
             </div>
             <h2 id="online-panel-title">

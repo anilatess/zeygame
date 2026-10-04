@@ -15,7 +15,8 @@
     "verify:online-phase3": "node scripts/verify-online-phase3.mjs",
     "verify:online-phase4": "node scripts/verify-online-phase4.mjs",
     "verify:online-phase5": "node scripts/verify-online-phase5.mjs",
-    "verify:online-countdown-start": "node scripts/verify-online-countdown-start.mjs"
+    "verify:online-countdown-start": "node scripts/verify-online-countdown-start.mjs",
+    "verify:online-entry-ui": "node scripts/verify-online-entry-ui.mjs"
   },
   "devDependencies": {
     "@types/react": "^19.2.2",
