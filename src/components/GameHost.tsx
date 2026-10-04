@@ -9,9 +9,19 @@ type Props = {
   visible: boolean;
   onHome: () => void;
   onChooseAnother: () => void;
+  onFinal?: () => void;
+  onScore?: (score: number, final: boolean) => void;
 };
 
-export function GameHost({ controllerRef, games, visible, onHome, onChooseAnother }: Props) {
+export function GameHost({
+  controllerRef,
+  games,
+  visible,
+  onHome,
+  onChooseAnother,
+  onFinal,
+  onScore,
+}: Props) {
   const rootRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -21,7 +31,7 @@ export function GameHost({ controllerRef, games, visible, onHome, onChooseAnothe
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!root || !video || !canvas) return;
-    const controller = new GameController({ root, video, canvas }, games);
+    const controller = new GameController({ root, video, canvas }, games, onFinal, onScore);
     controllerRef.current = controller;
     const resize = () => controller.resize();
     const stop = () => controller.stop();
@@ -35,7 +45,7 @@ export function GameHost({ controllerRef, games, visible, onHome, onChooseAnothe
       controller.stop();
       if (controllerRef.current === controller) controllerRef.current = null;
     };
-  }, [controllerRef, games]);
+  }, [controllerRef, games, onFinal, onScore]);
 
   return (
     <section className="game" tabIndex={-1} hidden={!visible} ref={rootRef}>

@@ -4,7 +4,7 @@ import { FaceTracker } from './face-tracker';
 import { GameManager } from './game-manager';
 import { GameUI } from './game-ui';
 import { HandTracker } from './hand-tracker';
-import { PlayerTracker, toSoloPlayers } from './player-tracker';
+import { PlayerTracker, toSinglePlayer, toSoloPlayers } from './player-tracker';
 import { PoseTracker } from './pose-tracker';
 import type { GameMode, MiniGame, PlayerFace, PlayerPose, PlayersTracking } from './types';
 
@@ -35,10 +35,14 @@ export class GameController {
   private running = false;
   private fps = 0;
   private previousTrackingType: ReturnType<GameManager['getTrackingType']> | null = null;
+  private finalNotified = false;
+  private previousPublishedScore: number | null = null;
 
   constructor(
     private readonly elements: GameElements,
     games: MiniGame[],
+    private readonly onFinal?: () => void,
+    private readonly onScore?: (score: number, final: boolean) => void,
   ) {
     this.manager = new GameManager(games);
     this.camera = new CameraController(elements.video, elements.canvas);
@@ -54,15 +58,25 @@ export class GameController {
     return this.manager;
   }
 
-  async prepare(mode: GameMode, selectedIndex?: number): Promise<boolean> {
+  async prepare(
+    mode: GameMode,
+    selectedIndex?: number,
+    localPlayerSlot?: 1 | 2,
+    roundSeed?: number,
+  ): Promise<boolean> {
     if (this.prepared || this.running) return false;
+    this.finalNotified = false;
+    this.previousPublishedScore = null;
     if (mode === 'party') this.manager.startParty();
     else if (mode === 'solo-test') this.manager.startSoloTest(this.requireIndex(selectedIndex));
+    else if (mode === 'online')
+      this.manager.startOnline(this.requireIndex(selectedIndex), localPlayerSlot ?? 1, roundSeed);
     else this.manager.startSingle(this.requireIndex(selectedIndex));
     const generation = ++this.generation;
     audio.unlock();
     try {
       await this.camera.start();
+      if (mode === 'online') await this.requiredTracker().load();
       if (generation !== this.generation) {
         this.camera.stop();
         audio.stopAll();
@@ -70,6 +84,15 @@ export class GameController {
       }
       this.prepared = true;
       this.elements.root.classList.toggle('solo-test', this.manager.isSoloTest());
+      this.elements.root.classList.toggle('online-session', this.manager.isOnline());
+      this.elements.root.classList.toggle(
+        'online-player-1',
+        this.manager.isOnline() && this.manager.getLocalPlayerSlot() === 1,
+      );
+      this.elements.root.classList.toggle(
+        'online-player-2',
+        this.manager.isOnline() && this.manager.getLocalPlayerSlot() === 2,
+      );
       return true;
     } catch (error) {
       if (generation === this.generation) {
@@ -91,6 +114,18 @@ export class GameController {
     this.elements.root.focus();
   }
 
+  runOnline(startDelaySeconds: number, roundSeed: number | null = null): void {
+    if (!this.prepared || this.running || !this.manager.isOnline()) return;
+    this.manager.setOnlineRoundSeed(roundSeed);
+    this.running = true;
+    this.manager.enterOnlineCalibration(startDelaySeconds);
+    this.camera.resize();
+    this.previous = performance.now();
+    cancelAnimationFrame(this.frame);
+    this.render();
+    this.elements.root.focus();
+  }
+
   stop(): void {
     this.generation++;
     this.prepared = false;
@@ -102,9 +137,12 @@ export class GameController {
     this.poseTracker.close();
     this.faceTracker.close();
     this.previousTrackingType = null;
+    this.previousPublishedScore = null;
     this.manager.reset();
     this.gameUI.reset();
     this.elements.root.classList.remove('solo-test');
+    this.elements.root.classList.remove('online-session');
+    this.elements.root.classList.remove('online-player-1', 'online-player-2');
     this.modelMessage().hidden = true;
     this.debugPanel().hidden = true;
   }
@@ -114,6 +152,8 @@ export class GameController {
     audio.stopAll();
     audio.unlock();
     this.manager.reset();
+    this.finalNotified = false;
+    this.previousPublishedScore = null;
     this.manager.enterCalibration();
     this.gameUI.reset();
     this.elements.root.focus();
@@ -127,6 +167,14 @@ export class GameController {
 
   resize(): void {
     if (this.prepared) this.camera.resize();
+  }
+
+  getMediaStream(): MediaStream | null {
+    return this.camera.getStream();
+  }
+
+  setOnlineRemoteScore(playerSlot: 1 | 2, score: number): void {
+    this.manager.setOnlineRemoteScore(playerSlot, score);
   }
 
   private render = (): void => {
@@ -181,7 +229,10 @@ export class GameController {
     players[0].face = faces[0];
     players[1].face = faces[1];
     if (this.manager.isSoloTest()) players = toSoloPlayers(players);
-    if (!this.manager.isSoloTest()) this.playerTracker.drawRegions(this.elements.canvas);
+    if (this.manager.isOnline())
+      players = toSinglePlayer(players, this.manager.getLocalPlayerSlot());
+    if (!this.manager.isSoloTest() && !this.manager.isOnline())
+      this.playerTracker.drawRegions(this.elements.canvas);
 
     this.manager.update(
       dt,
@@ -191,6 +242,22 @@ export class GameController {
       rect,
       modelReady,
     );
+    if (this.manager.isOnline()) {
+      const localIndex = this.manager.getLocalPlayerSlot() - 1;
+      const localScore = this.manager.getLiveScores()[localIndex];
+      if (localScore !== this.previousPublishedScore) {
+        this.previousPublishedScore = localScore;
+        this.onScore?.(localScore, false);
+      }
+    }
+    if (this.manager.getState() === 'FINAL' && !this.finalNotified) {
+      this.finalNotified = true;
+      if (this.manager.isOnline()) {
+        const localIndex = this.manager.getLocalPlayerSlot() - 1;
+        this.onScore?.(this.manager.getLiveScores()[localIndex], true);
+      }
+      this.onFinal?.();
+    }
     this.gameUI.render(
       this.manager,
       players,

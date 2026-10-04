@@ -61,6 +61,7 @@ export class GameUI {
     this.node('.keep-going').hidden = state !== 'PLAYING' || manager.getRemainingTime() > 10;
     const single = manager.getSession().mode !== 'party';
     const solo = manager.isSoloTest();
+    const online = manager.isOnline();
     this.node('[data-action="choose-another"]').hidden = state !== 'FINAL' || !single;
     this.node('[data-action="replay"]').textContent = single
       ? 'Aynı Oyunu Tekrar Oyna'
@@ -95,8 +96,12 @@ export class GameUI {
           : type === 'face'
             ? 'yüzünü göster'
             : 'gerekli vücut noktalarını kadraja al';
-      const status =
-        solo && readiness[0]
+      const localReady = readiness[manager.getLocalPlayerSlot() - 1];
+      const status = online
+        ? localReady
+          ? ''
+          : `Yerel oyuncu, ${missing}.`
+        : solo && readiness[0]
           ? ''
           : solo
             ? `Player 1, ${missing}.`
@@ -128,21 +133,43 @@ export class GameUI {
       this.text('result-title', final && !single ? 'İşte partinin sonucu!' : manager.getGameName());
       this.text(
         'winner',
-        solo
-          ? `Player 1 test skoru: ${one}`
-          : tied
-            ? '＝ Berabere! Alkışlar ikinize.'
-            : `★ Oyuncu ${one > two ? 1 : 2} ${single ? 'oyunu' : final ? 'partiyi' : 'turu'} kazandı!`,
+        online
+          ? 'Tur tamamlandı!'
+          : solo
+            ? `Player 1 test skoru: ${one}`
+            : tied
+              ? '＝ Berabere! Alkışlar ikinize.'
+              : `★ Oyuncu ${one > two ? 1 : 2} ${single ? 'oyunu' : final ? 'partiyi' : 'turu'} kazandı!`,
       );
       this.text('result-one', String(one));
       this.text('result-two', String(two));
       this.text(
         'award-one',
-        solo ? 'Test tamamlandı' : tied ? 'Eşit puan' : one > two ? '★ Kazanan' : 'İyi mücadele!',
+        online
+          ? manager.getLocalPlayerSlot() === 1
+            ? 'Yerel skor'
+            : ''
+          : solo
+            ? 'Test tamamlandı'
+            : tied
+              ? 'Eşit puan'
+              : one > two
+                ? '★ Kazanan'
+                : 'İyi mücadele!',
       );
       this.text(
         'award-two',
-        solo ? 'Pasif' : tied ? 'Eşit puan' : two > one ? '★ Kazanan' : 'İyi mücadele!',
+        online
+          ? manager.getLocalPlayerSlot() === 2
+            ? 'Yerel skor'
+            : ''
+          : solo
+            ? 'Pasif'
+            : tied
+              ? 'Eşit puan'
+              : two > one
+                ? '★ Kazanan'
+                : 'İyi mücadele!',
       );
       this.text(
         'next',

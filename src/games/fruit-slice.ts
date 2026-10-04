@@ -19,6 +19,7 @@ type Particle = { x: number; y: number; vx: number; vy: number; life: number; co
 const COLORS = ['#60a5fa', '#f472b6'] as const;
 
 export class FruitSlice implements MiniGame {
+  readonly id = 'fruit-slice' as const;
   readonly name = 'Meyve Kesme';
   readonly description = 'Meyveleri kes, bombalara dokunma.';
   readonly tracking = 'hands' as const;
@@ -30,6 +31,8 @@ export class FruitSlice implements MiniGame {
   private scores: [number, number] = [0, 0];
   private spawn = 0;
   private solo = false;
+  private localOwner: 0 | 1 = 0;
+  private random = Math.random;
 
   start(width: number, height: number, context?: GameStartContext): void {
     this.width = width;
@@ -39,12 +42,14 @@ export class FruitSlice implements MiniGame {
     this.scores = [0, 0];
     this.spawn = 0;
     this.solo = context?.activePlayers === 1;
+    this.localOwner = context?.mode === 'online' && context.localPlayerSlot === 2 ? 1 : 0;
+    this.random = context?.random ?? Math.random;
   }
   update(dt: number, players: PlayersTracking, rect: VideoRect): void {
     this.spawn += dt;
     if (this.spawn > 0.7) {
       this.spawn = 0;
-      this.addFruit(this.solo ? 0 : Math.random() < 0.5 ? 0 : 1);
+      this.addFruit(this.solo ? this.localOwner : this.random() < 0.5 ? 0 : 1);
     }
     for (const fruit of this.fruits) {
       fruit.age += dt;
@@ -140,13 +145,13 @@ export class FruitSlice implements MiniGame {
     this.fruits.push({
       owner,
       radius,
-      x: left + Math.random() * (right - left),
+      x: left + this.random() * (right - left),
       y: -radius,
-      vx: (Math.random() - 0.5) * this.width * 0.25,
-      vy: this.height * (0.25 + Math.random() * 0.2),
-      color: ['#facc15', '#4ade80', '#fb923c', COLORS[owner]][Math.floor(Math.random() * 4)],
-      shape: ['circle', 'diamond', 'oval'][Math.floor(Math.random() * 3)] as Fruit['shape'],
-      bomb: Math.random() < 0.18,
+      vx: (this.random() - 0.5) * this.width * 0.25,
+      vy: this.height * (0.25 + this.random() * 0.2),
+      color: ['#facc15', '#4ade80', '#fb923c', COLORS[owner]][Math.floor(this.random() * 4)],
+      shape: ['circle', 'diamond', 'oval'][Math.floor(this.random() * 3)] as Fruit['shape'],
+      bomb: this.random() < 0.18,
       sliced: false,
       age: 0,
     });

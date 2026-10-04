@@ -20,6 +20,7 @@ const HIT_COOLDOWN = 0.25;
 const EXIT_MARGIN_RATIO = 0.1;
 
 export class IceBreaker implements MiniGame {
+  readonly id = 'ice-breaker' as const;
   readonly name = 'Buz Kırma';
   readonly description =
     'İşaret parmağınla küpe üç ayrı kez dokun; her dokunuştan sonra parmağını küpten çıkar.';
@@ -31,6 +32,8 @@ export class IceBreaker implements MiniGame {
   private spawnTimer = 0;
   private hitClock = 0;
   private solo = false;
+  private localOwner: 0 | 1 = 0;
+  private random = Math.random;
 
   start(width: number, height: number, context?: GameStartContext): void {
     this.width = width;
@@ -40,7 +43,9 @@ export class IceBreaker implements MiniGame {
     this.spawnTimer = 0;
     this.hitClock = 0;
     this.solo = context?.activePlayers === 1;
-    this.spawnCube(0);
+    this.localOwner = context?.mode === 'online' && context.localPlayerSlot === 2 ? 1 : 0;
+    this.random = context?.random ?? Math.random;
+    this.spawnCube(this.solo ? this.localOwner : 0);
     if (!this.solo) this.spawnCube(1);
   }
 
@@ -49,7 +54,7 @@ export class IceBreaker implements MiniGame {
     this.hitClock += deltaTime;
     if (this.spawnTimer >= 1.2) {
       this.spawnTimer = 0;
-      this.spawnCube(this.solo ? 0 : Math.random() < 0.5 ? 0 : 1);
+      this.spawnCube(this.solo ? this.localOwner : this.random() < 0.5 ? 0 : 1);
     }
     for (const cube of this.cubes) cube.age += deltaTime;
     this.cubes = this.cubes.filter((cube) => cube.age < CUBE_LIFETIME);
@@ -132,8 +137,8 @@ export class IceBreaker implements MiniGame {
     this.cubes.push({
       owner,
       size,
-      x: minX + Math.random() * Math.max(1, maxX - minX),
-      y: this.height * 0.2 + Math.random() * this.height * 0.6,
+      x: minX + this.random() * Math.max(1, maxX - minX),
+      y: this.height * 0.2 + this.random() * this.height * 0.6,
       hits: 0,
       age: 0,
       lastHit: -Infinity,

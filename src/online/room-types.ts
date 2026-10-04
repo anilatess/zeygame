@@ -1,4 +1,7 @@
+import type { GameId } from '../games';
+
 export type RoomStatus = 'waiting' | 'closed';
+export type SessionState = 'waiting' | 'countdown' | 'playing' | 'finished';
 
 export type Room = {
   id: string;
@@ -6,6 +9,11 @@ export type Room = {
   hostUserId: string;
   status: RoomStatus;
   expiresAt: string;
+  selectedGameId: GameId | null;
+  sessionState: SessionState;
+  roundId: string | null;
+  startAt: string | null;
+  roundSeed: number | null;
 };
 
 export type RoomPlayer = {
@@ -18,9 +26,33 @@ export type RoomPlayer = {
   joinedAt: string;
 };
 
-export type RoomSnapshot = { room: Room; players: RoomPlayer[]; currentUserId: string };
+export type RoundScore = {
+  roundId: string;
+  playerSlot: 1 | 2;
+  score: number;
+  sequence: number;
+  isFinal: boolean;
+  updatedAt: string;
+};
+
+export type RoomSnapshot = {
+  room: Room;
+  players: RoomPlayer[];
+  scores: RoundScore[];
+  currentUserId: string;
+};
 export type PresenceState = Record<string, boolean>;
-export type OnlineBusyAction = 'recovering' | 'creating' | 'joining' | 'ready' | 'leaving' | null;
+export type OnlineBusyAction =
+  | 'recovering'
+  | 'creating'
+  | 'joining'
+  | 'ready'
+  | 'selecting'
+  | 'starting'
+  | 'finishing'
+  | 'resetting'
+  | 'leaving'
+  | null;
 
 export class OnlineRoomError extends Error {
   constructor(
@@ -34,6 +66,13 @@ export class OnlineRoomError extends Error {
       | 'closed'
       | 'expired'
       | 'not-member'
+      | 'host-only'
+      | 'invalid-game'
+      | 'game-required'
+      | 'players-required'
+      | 'players-not-ready'
+      | 'already-started'
+      | 'invalid-transition'
       | 'network'
       | 'unknown',
     message: string,

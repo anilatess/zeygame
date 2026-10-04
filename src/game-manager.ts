@@ -2,8 +2,9 @@ import type { VideoRect } from './coordinate-mapper';
 import type { GameMode, GameState, MiniGame, PlayersTracking } from './types';
 import { audio } from './audio';
 import { calibrationReadiness } from './calibration';
+import { createSeededRandom } from './random';
 
-type Session = { mode: GameMode; games: readonly MiniGame[] };
+type Session = { mode: GameMode; games: readonly MiniGame[]; localPlayerSlot?: 1 | 2 };
 
 export class GameManager {
   private state: GameState = 'MENU';
@@ -14,6 +15,9 @@ export class GameManager {
   private waitingForModel = false;
   private lastScores: [number, number] = [0, 0];
   private totals: [number, number] = [0, 0];
+  private onlineStartDelay = 0;
+  private onlineRoundSeed: number | undefined;
+  private remoteScores: [number | null, number | null] = [null, null];
   private activeSession: Session;
   constructor(private readonly games: MiniGame[]) {
     this.activeSession = { mode: 'party', games };
@@ -43,8 +47,21 @@ export class GameManager {
     this.activeSession = { mode: 'solo-test', games: [this.games[index]] };
     this.reset();
   }
+  startOnline(index: number, localPlayerSlot: 1 | 2, roundSeed?: number): void {
+    if (!Number.isInteger(index) || index < 0 || index >= this.games.length)
+      throw new Error('Geçersiz oyun seçimi.');
+    this.activeSession = { mode: 'online', games: [this.games[index]], localPlayerSlot };
+    this.onlineRoundSeed = roundSeed;
+    this.reset();
+  }
   isSoloTest(): boolean {
     return this.activeSession.mode === 'solo-test';
+  }
+  isOnline(): boolean {
+    return this.activeSession.mode === 'online';
+  }
+  getLocalPlayerSlot(): 1 | 2 {
+    return this.activeSession.localPlayerSlot ?? 1;
   }
   getCalibrationReadiness(
     players: PlayersTracking,
@@ -53,7 +70,10 @@ export class GameManager {
     rect?: VideoRect,
   ): [boolean, boolean] {
     const readiness = calibrationReadiness(this.miniGame, players, width, height, rect);
-    return this.isSoloTest() ? [readiness[0], true] : readiness;
+    if (this.isSoloTest()) return [readiness[0], true];
+    if (this.isOnline())
+      return this.getLocalPlayerSlot() === 1 ? [readiness[0], true] : [true, readiness[1]];
+    return readiness;
   }
   getTrackingType(): 'hands' | 'pose' | 'face' {
     return this.miniGame.needs ?? this.miniGame.tracking;
@@ -80,7 +100,20 @@ export class GameManager {
     return this.miniGame;
   }
   getLiveScores(): [number, number] {
-    return this.miniGame.getScores();
+    const scores = this.miniGame.getScores();
+    if (!this.isOnline()) return scores;
+    const remoteIndex = this.getLocalPlayerSlot() === 1 ? 1 : 0;
+    if (this.remoteScores[remoteIndex] !== null)
+      scores[remoteIndex] = this.remoteScores[remoteIndex] as number;
+    return scores;
+  }
+  setOnlineRemoteScore(playerSlot: 1 | 2, score: number): void {
+    if (!this.isOnline() || playerSlot === this.getLocalPlayerSlot() || !Number.isFinite(score))
+      return;
+    const index = playerSlot - 1;
+    this.remoteScores[index] = Math.max(0, Math.trunc(score));
+    if (this.state === 'RESULT' || this.state === 'FINAL')
+      this.lastScores[index] = this.remoteScores[index] as number;
   }
   hasNextGame(): boolean {
     return this.index < this.activeSession.games.length - 1;
@@ -96,9 +129,19 @@ export class GameManager {
     this.resultTime = 0;
     this.lastScores = [0, 0];
     this.totals = [0, 0];
+    this.onlineStartDelay = 0;
+    this.remoteScores = [null, null];
   }
   enterCalibration(): void {
     this.state = 'CALIBRATION';
+  }
+  enterOnlineCalibration(startDelaySeconds: number): void {
+    this.onlineStartDelay = Math.max(0, startDelaySeconds);
+    this.state = 'CALIBRATION';
+  }
+  setOnlineRoundSeed(roundSeed: number | null): void {
+    if (this.isOnline() && roundSeed !== null && Number.isInteger(roundSeed))
+      this.onlineRoundSeed = roundSeed;
   }
   update(
     dt: number,
@@ -108,6 +151,8 @@ export class GameManager {
     rect: VideoRect,
     modelReady = true,
   ): void {
+    if (this.isOnline() && (this.state === 'CALIBRATION' || this.state === 'COUNTDOWN'))
+      this.onlineStartDelay = Math.max(0, this.onlineStartDelay - dt);
     if (['CALIBRATION', 'COUNTDOWN', 'PLAYING'].includes(this.state)) {
       if (!modelReady) {
         this.waitingForModel = true;
@@ -124,7 +169,7 @@ export class GameManager {
         : [false, false];
     if (this.state === 'CALIBRATION' && ready[0] && ready[1]) {
       this.state = 'COUNTDOWN';
-      this.countdown = 3;
+      this.countdown = this.isOnline() ? this.onlineStartDelay : 3;
       audio.tone(600, 0.08);
     } else if (this.state === 'COUNTDOWN') {
       const old = Math.ceil(this.countdown);
@@ -135,14 +180,20 @@ export class GameManager {
         this.elapsed = 0;
         this.miniGame.start(width, height, {
           mode: this.activeSession.mode,
-          activePlayers: this.isSoloTest() ? 1 : 2,
+          activePlayers: this.isSoloTest() || this.isOnline() ? 1 : 2,
+          localPlayerSlot: this.isOnline() ? this.getLocalPlayerSlot() : undefined,
+          roundSeed: this.onlineRoundSeed,
+          random:
+            this.isOnline() && this.onlineRoundSeed !== undefined
+              ? createSeededRandom(this.onlineRoundSeed)
+              : undefined,
         });
       }
     } else if (this.state === 'PLAYING') {
       this.elapsed += dt;
       this.miniGame.update(dt, players, rect);
       if (this.elapsed >= (this.miniGame.duration ?? 20)) {
-        this.lastScores = this.miniGame.getScores();
+        this.lastScores = this.getLiveScores();
         this.totals[0] += this.lastScores[0];
         this.totals[1] += this.lastScores[1];
         this.state = 'RESULT';

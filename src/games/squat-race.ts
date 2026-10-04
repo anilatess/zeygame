@@ -5,6 +5,7 @@ const REQUIRED_LANDMARKS = [23, 24, 25, 26, 27, 28] as const;
 type SquatPhase = 'awaiting-standing' | 'standing' | 'down';
 
 export class SquatRace implements MiniGame {
+  readonly id = 'squat-race' as const;
   readonly name = 'Çömelme Yarışı';
   readonly description = 'Önce ayakta dur; ardından çömelip yeniden ayağa kalkarak puan topla.';
   readonly tracking = 'pose' as const;

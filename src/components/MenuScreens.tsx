@@ -164,7 +164,7 @@ export function InfoScreen({
   onBack: () => void;
   onPlay: (index: number, solo: boolean) => void;
 }) {
-  if (kind === 'online') return <OnlineScreen onBack={onBack} />;
+  if (kind === 'online') return <OnlineScreen onBack={onBack} games={games} />;
   if (kind === 'howto') return <HowTo gameCount={games.length} onBack={onBack} />;
   return (
     <GameLibrary

@@ -96,6 +96,7 @@ export function scoreExpression(
 }
 
 export class FaceMimic implements MiniGame {
+  readonly id = 'face-mimic' as const;
   readonly name = 'Surat Taklidi';
   readonly description = `Sırayla şu ifadeleri taklit et: ${EXPRESSIONS.map((expression) => expression.name).join(', ')}.`;
   readonly tracking = 'face' as const;

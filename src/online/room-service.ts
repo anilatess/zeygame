@@ -1,9 +1,11 @@
 import type { PostgrestError, User } from '@supabase/supabase-js';
 import { getSupabaseClient } from '../lib/supabase';
+import { isGameId, type GameId } from '../games';
 import {
   OnlineRoomError,
   type Room,
   type RoomPlayer,
+  type RoundScore,
   type RoomSnapshot,
   validateDisplayName,
   validateRoomCode,
@@ -16,6 +18,17 @@ type RoomRow = {
   host_user_id: string;
   status: 'waiting' | 'closed';
   expires_at: string;
+  selected_game_id: string | null;
+  session_state: 'waiting' | 'countdown' | 'playing' | 'finished';
+  round_id: string | null;
+  start_at: string | null;
+  round_seed: number | null;
+};
+export type StartRoomGameResult = {
+  roundId: string;
+  selectedGameId: GameId;
+  startAt: string;
+  serverNow: string;
 };
 type PlayerRow = {
   id: string;
@@ -25,6 +38,14 @@ type PlayerRow = {
   player_slot: 1 | 2;
   is_ready: boolean;
   joined_at: string;
+};
+type ScoreRow = {
+  round_id: string;
+  player_slot: 1 | 2;
+  score: number;
+  sequence: number;
+  is_final: boolean;
+  updated_at: string;
 };
 
 export const ROOM_RECOVERY_KEY = 'zeygame.online-room.v1';
@@ -67,21 +88,38 @@ export async function joinRoom(code: string, displayName: string): Promise<RoomS
 export async function fetchRoom(roomId: string): Promise<RoomSnapshot> {
   const client = getSupabaseClient();
   const user = await ensureOnlineUser();
-  const [roomResult, playersResult] = await Promise.all([
-    client.from('rooms').select('id,code,host_user_id,status,expires_at').eq('id', roomId).single(),
+  const [roomResult, playersResult, scoresResult] = await Promise.all([
+    client
+      .from('rooms')
+      .select(
+        'id,code,host_user_id,status,expires_at,selected_game_id,session_state,round_id,start_at,round_seed',
+      )
+      .eq('id', roomId)
+      .single(),
     client
       .from('room_players')
       .select('id,room_id,user_id,display_name,player_slot,is_ready,joined_at')
       .eq('room_id', roomId)
       .order('player_slot'),
+    client
+      .from('room_round_scores')
+      .select('round_id,player_slot,score,sequence,is_final,updated_at')
+      .eq('room_id', roomId),
   ]);
   if (roomResult.error) throw mapOnlineError(roomResult.error);
   if (playersResult.error) throw mapOnlineError(playersResult.error);
+  if (
+    scoresResult.error &&
+    scoresResult.error.code !== '42P01' &&
+    scoresResult.error.code !== 'PGRST205'
+  )
+    throw mapOnlineError(scoresResult.error);
   const room = toRoom(roomResult.data as RoomRow);
   const players = (playersResult.data as PlayerRow[]).map(toPlayer);
+  const scores = ((scoresResult.data ?? []) as ScoreRow[]).map(toScore);
   if (!players.some((player) => player.userId === user.id))
     throw new OnlineRoomError('not-member', 'Bu odanın üyesi değilsin.');
-  return { room, players, currentUserId: user.id };
+  return { room, players, scores, currentUserId: user.id };
 }
 
 export async function recoverRoom(): Promise<RoomSnapshot | null> {
@@ -101,6 +139,83 @@ export async function recoverRoom(): Promise<RoomSnapshot | null> {
 
 export async function setReady(roomId: string, ready: boolean): Promise<void> {
   const { error } = await getSupabaseClient().rpc('set_room_ready', { room_id: roomId, ready });
+  if (error) throw mapOnlineError(error);
+}
+
+export async function selectRoomGame(roomId: string, gameId: GameId): Promise<void> {
+  const { error } = await getSupabaseClient().rpc('select_room_game', {
+    room_id: roomId,
+    game_id: gameId,
+  });
+  if (error) throw mapOnlineError(error);
+}
+
+export async function startRoomGame(roomId: string): Promise<StartRoomGameResult> {
+  const { data, error } = await getSupabaseClient().rpc('start_room_game', { room_id: roomId });
+  if (error) throw mapOnlineError(error);
+  const row = firstObject(data);
+  if (
+    typeof row.started_round_id !== 'string' ||
+    typeof row.selected_game_id !== 'string' ||
+    !isGameId(row.selected_game_id) ||
+    typeof row.start_at !== 'string' ||
+    typeof row.server_now !== 'string'
+  )
+    throw new OnlineRoomError('unknown', 'Oyun oturumu başlatılamadı.');
+  return {
+    roundId: row.started_round_id,
+    selectedGameId: row.selected_game_id,
+    startAt: row.start_at,
+    serverNow: row.server_now,
+  };
+}
+
+export async function confirmRoomPlaying(roomId: string, roundId: string): Promise<void> {
+  const { error } = await getSupabaseClient().rpc('confirm_room_playing', {
+    room_id: roomId,
+    round_id: roundId,
+  });
+  if (error) throw mapOnlineError(error);
+}
+
+export async function finishRoomGame(roomId: string, roundId: string): Promise<void> {
+  const { error } = await getSupabaseClient().rpc('finish_room_game', {
+    room_id: roomId,
+    round_id: roundId,
+  });
+  if (error) throw mapOnlineError(error);
+}
+
+export async function resetRoomSession(roomId: string): Promise<void> {
+  const { error } = await getSupabaseClient().rpc('reset_room_session', { room_id: roomId });
+  if (error) throw mapOnlineError(error);
+}
+
+export async function getServerClockOffset(): Promise<number> {
+  const sentAt = Date.now();
+  const { data, error } = await getSupabaseClient().rpc('get_server_time');
+  const receivedAt = Date.now();
+  if (error) throw mapOnlineError(error);
+  const serverNow = typeof data === 'string' ? data : firstObject(data).server_now;
+  if (typeof serverNow !== 'string')
+    throw new OnlineRoomError('unknown', 'Sunucu saati alınamadı.');
+  return Date.parse(serverNow) - (sentAt + receivedAt) / 2;
+}
+
+export async function submitRoundScore(
+  roomId: string,
+  roundId: string,
+  score: number,
+  sequence: number,
+  isFinal: boolean,
+): Promise<void> {
+  const { error } = await getSupabaseClient().rpc('submit_round_score', {
+    room_id: roomId,
+    round_id: roundId,
+    submitted_score: Math.max(0, Math.trunc(score)),
+    submitted_sequence: Math.max(0, Math.trunc(sequence)),
+    final_score: isFinal,
+  });
   if (error) throw mapOnlineError(error);
 }
 
@@ -146,7 +261,31 @@ function toRoom(row: RoomRow): Room {
     hostUserId: row.host_user_id,
     status: row.status,
     expiresAt: row.expires_at,
+    selectedGameId:
+      row.selected_game_id && isGameId(row.selected_game_id) ? row.selected_game_id : null,
+    sessionState: row.session_state,
+    roundId: row.round_id,
+    startAt: row.start_at,
+    roundSeed: row.round_seed,
   };
+}
+
+function toScore(row: ScoreRow): RoundScore {
+  return {
+    roundId: row.round_id,
+    playerSlot: row.player_slot,
+    score: row.score,
+    sequence: row.sequence,
+    isFinal: row.is_final,
+    updatedAt: row.updated_at,
+  };
+}
+
+function firstObject(data: unknown): Record<string, unknown> {
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row || typeof row !== 'object')
+    throw new OnlineRoomError('unknown', 'Sunucu yanıtı alınamadı.');
+  return row as Record<string, unknown>;
 }
 
 function toPlayer(row: PlayerRow): RoomPlayer {
@@ -180,6 +319,20 @@ export function mapOnlineError(
     return new OnlineRoomError('invalid-name', 'Adın 1–20 karakter arasında olmalı.');
   if (message.includes('NOT_A_ROOM_MEMBER'))
     return new OnlineRoomError('not-member', 'Bu odanın üyesi değilsin.');
+  if (message.includes('HOST_ONLY'))
+    return new OnlineRoomError('host-only', 'Bu işlemi yalnızca ev sahibi yapabilir.');
+  if (message.includes('INVALID_GAME_ID'))
+    return new OnlineRoomError('invalid-game', 'Bu oyun seçilemiyor.');
+  if (message.includes('GAME_NOT_SELECTED'))
+    return new OnlineRoomError('game-required', 'Önce bir oyun seç.');
+  if (message.includes('TWO_PLAYERS_REQUIRED'))
+    return new OnlineRoomError('players-required', 'Oyunu başlatmak için iki oyuncu gerekli.');
+  if (message.includes('BOTH_PLAYERS_NOT_READY'))
+    return new OnlineRoomError('players-not-ready', 'İki oyuncu da hazır olmalı.');
+  if (message.includes('ROUND_ALREADY_STARTED'))
+    return new OnlineRoomError('already-started', 'Tur zaten başladı.');
+  if (message.includes('SESSION_TRANSITION_REJECTED'))
+    return new OnlineRoomError('invalid-transition', 'Oyun oturumu bu işlem için hazır değil.');
   if (message.includes('AUTH_REQUIRED'))
     return new OnlineRoomError('auth', 'Online oturum oluşturulamadı.');
   if (message.includes('Failed to fetch') || message.includes('NetworkError'))

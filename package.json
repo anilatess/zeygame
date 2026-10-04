@@ -9,7 +9,12 @@
     "build": "tsc -b && vite build --configLoader runner && node scripts/generate-service-worker.mjs",
     "preview": "vite preview",
     "format": "prettier --write src scripts",
-    "format:check": "prettier --check src scripts"
+    "format:check": "prettier --check src scripts",
+    "verify:online-phase2": "node scripts/verify-online-phase2.mjs",
+    "verify:camera-preparation": "node scripts/verify-camera-preparation.mjs",
+    "verify:online-phase3": "node scripts/verify-online-phase3.mjs",
+    "verify:online-phase4": "node scripts/verify-online-phase4.mjs",
+    "verify:online-phase5": "node scripts/verify-online-phase5.mjs"
   },
   "devDependencies": {
     "@types/react": "^19.2.2",

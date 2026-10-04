@@ -1,4 +1,5 @@
 import type { VideoRect } from './coordinate-mapper';
+import type { GameId } from './games';
 
 export type CameraStatus = 'idle' | 'starting' | 'active' | 'denied' | 'missing' | 'error';
 
@@ -35,14 +36,18 @@ export type PlayersTracking = [PlayerTracking, PlayerTracking];
 
 export type GameState = 'MENU' | 'CALIBRATION' | 'COUNTDOWN' | 'PLAYING' | 'RESULT' | 'FINAL';
 
-export type GameMode = 'party' | 'single' | 'solo-test';
+export type GameMode = 'party' | 'single' | 'solo-test' | 'online';
 
 export type GameStartContext = {
   mode: GameMode;
   activePlayers: 1 | 2;
+  localPlayerSlot?: 1 | 2;
+  roundSeed?: number;
+  random?: () => number;
 };
 
 export type MiniGame = {
+  readonly id: GameId;
   name: string;
   description: string;
   tracking: 'hands' | 'pose' | 'face';

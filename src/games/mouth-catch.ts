@@ -17,6 +17,7 @@ type Particle = { x: number; y: number; vx: number; vy: number; life: number; co
 const COLORS = ['#60a5fa', '#f472b6'] as const;
 
 export class MouthCatch implements MiniGame {
+  readonly id = 'mouth-catch' as const;
   readonly name = 'Ağızla Yakala';
   readonly description = 'Ağzını açarak yiyecekleri yakala.';
   readonly tracking = 'face' as const;
@@ -28,6 +29,8 @@ export class MouthCatch implements MiniGame {
   private scores: [number, number] = [0, 0];
   private spawn = 0;
   private solo = false;
+  private localOwner: 0 | 1 = 0;
+  private random = Math.random;
   start(width: number, height: number, context?: GameStartContext): void {
     this.width = width;
     this.height = height;
@@ -36,12 +39,14 @@ export class MouthCatch implements MiniGame {
     this.scores = [0, 0];
     this.spawn = 0;
     this.solo = context?.activePlayers === 1;
+    this.localOwner = context?.mode === 'online' && context.localPlayerSlot === 2 ? 1 : 0;
+    this.random = context?.random ?? Math.random;
   }
   update(dt: number, players: PlayersTracking, rect: VideoRect): void {
     this.spawn += dt;
     if (this.spawn > 0.65) {
       this.spawn = 0;
-      this.addFood(this.solo ? 0 : Math.random() < 0.5 ? 0 : 1);
+      this.addFood(this.solo ? this.localOwner : this.random() < 0.5 ? 0 : 1);
     }
     for (const food of this.foods) food.y += food.speed * dt;
     for (const particle of this.particles) {
@@ -129,15 +134,15 @@ export class MouthCatch implements MiniGame {
     const size = Math.max(17, Math.min(this.width, this.height) * 0.04);
     const min = this.solo ? this.width * 0.08 : owner === 0 ? this.width * 0.08 : this.width * 0.58;
     const max = this.solo ? this.width * 0.92 : owner === 0 ? this.width * 0.42 : this.width * 0.92;
-    const roll = Math.random();
+    const roll = this.random();
     this.foods.push({
       owner,
       size,
-      x: min + Math.random() * (max - min),
+      x: min + this.random() * (max - min),
       y: -size,
-      speed: this.height * (0.22 + Math.random() * 0.12),
+      speed: this.height * (0.22 + this.random() * 0.12),
       color: COLORS[owner],
-      shape: ['circle', 'diamond', 'oval'][Math.floor(Math.random() * 3)] as Food['shape'],
+      shape: ['circle', 'diamond', 'oval'][Math.floor(this.random() * 3)] as Food['shape'],
       kind: roll < 0.14 ? 'bomb' : roll < 0.28 ? 'gold' : 'normal',
       caught: false,
     });

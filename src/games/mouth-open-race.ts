@@ -1,6 +1,7 @@
 import type { MiniGame, PlayersTracking } from '../types';
 import { audio } from '../audio';
 export class MouthOpenRace implements MiniGame {
+  readonly id = 'mouth-open-race' as const;
   readonly name = 'Ağız Açma Yarışı';
   readonly description = 'Ağzını aç, rakibinden fazla puan al.';
   readonly tracking = 'face' as const;

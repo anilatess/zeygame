@@ -2,6 +2,8 @@ import type { CameraError } from './types';
 import { getCoverRect, type VideoRect } from './coordinate-mapper';
 
 export class CameraController {
+  private static readonly ACQUISITION_TIMEOUT_MS = 20_000;
+  private static readonly METADATA_TIMEOUT_MS = 12_000;
   private stream: MediaStream | null = null;
   private generation = 0;
   private cancelMetadata: (() => void) | null = null;
@@ -19,15 +21,34 @@ export class CameraController {
     this.stop();
     const generation = this.generation;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 1280, max: 1280 },
-          height: { ideal: 720, max: 720 },
-          frameRate: { ideal: 30, max: 30 },
-        },
-        audio: false,
-      });
+      if (navigator.mediaDevices.enumerateDevices) {
+        const devices = await this.withTimeout(
+          navigator.mediaDevices.enumerateDevices(),
+          CameraController.ACQUISITION_TIMEOUT_MS,
+          'CameraDeviceTimeoutError',
+        );
+        if (!devices.some((device) => device.kind === 'videoinput'))
+          throw new DOMException('No video input device is available.', 'NotFoundError');
+      }
+      const stream = await this.withTimeout(
+        navigator.mediaDevices
+          .getUserMedia({
+            video: {
+              facingMode: 'user',
+              width: { ideal: 1280, max: 1280 },
+              height: { ideal: 720, max: 720 },
+              frameRate: { ideal: 30, max: 30 },
+            },
+            audio: false,
+          })
+          .then((candidate) => {
+            if (generation !== this.generation)
+              candidate.getTracks().forEach((track) => track.stop());
+            return candidate;
+          }),
+        CameraController.ACQUISITION_TIMEOUT_MS,
+        'CameraTimeoutError',
+      );
       if (generation !== this.generation) {
         stream.getTracks().forEach((track) => track.stop());
         return;
@@ -36,18 +57,22 @@ export class CameraController {
       this.video.srcObject = this.stream;
       this.video.muted = true;
       this.video.playsInline = true;
-      await new Promise<void>((resolve) => {
-        if (this.video.readyState >= HTMLMediaElement.HAVE_METADATA) resolve();
-        else {
-          const done = () => {
-            this.video.removeEventListener('loadedmetadata', done);
-            if (this.cancelMetadata === done) this.cancelMetadata = null;
-            resolve();
-          };
-          this.cancelMetadata = done;
-          this.video.addEventListener('loadedmetadata', done, { once: true });
-        }
-      });
+      await this.withTimeout(
+        new Promise<void>((resolve) => {
+          if (this.video.readyState >= HTMLMediaElement.HAVE_METADATA) resolve();
+          else {
+            const done = () => {
+              this.video.removeEventListener('loadedmetadata', done);
+              if (this.cancelMetadata === done) this.cancelMetadata = null;
+              resolve();
+            };
+            this.cancelMetadata = done;
+            this.video.addEventListener('loadedmetadata', done, { once: true });
+          }
+        }),
+        CameraController.METADATA_TIMEOUT_MS,
+        'CameraMetadataTimeoutError',
+      );
       if (generation !== this.generation) return;
       await this.video.play();
     } catch (error) {
@@ -62,6 +87,24 @@ export class CameraController {
       }
       if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
         throw this.createError('missing', 'Bu cihazda kullanılabilir bir kamera bulunamadı.');
+      }
+      if (name === 'NotReadableError' || name === 'TrackStartError') {
+        throw this.createError(
+          'error',
+          'Kamera başka bir uygulama tarafından kullanılıyor olabilir.',
+        );
+      }
+      if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') {
+        throw this.createError(
+          'error',
+          'Kamera bu cihazda gereken görüntü ayarlarını desteklemiyor.',
+        );
+      }
+      if (name === 'AbortError') {
+        throw this.createError('error', 'Kamera hazırlığı yarıda kesildi. Tekrar deneyebilirsin.');
+      }
+      if (name.includes('Timeout')) {
+        throw this.createError('error', 'Kamera zamanında yanıt vermedi. Tekrar deneyebilirsin.');
       }
       throw this.createError(
         'error',
@@ -98,6 +141,10 @@ export class CameraController {
     );
   }
 
+  getStream(): MediaStream | null {
+    return this.stream;
+  }
+
   resize(): void {
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
     this.canvas.width = Math.floor(this.canvas.clientWidth * ratio);
@@ -115,5 +162,20 @@ export class CameraController {
 
   private createError(status: CameraError['status'], message: string): CameraError {
     return { status, message };
+  }
+
+  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, name: string): Promise<T> {
+    let timeout = 0;
+    const expired = new Promise<never>((_, reject) => {
+      timeout = window.setTimeout(
+        () => reject(new DOMException('Camera operation timed out.', name)),
+        timeoutMs,
+      );
+    });
+    try {
+      return await Promise.race([promise, expired]);
+    } finally {
+      window.clearTimeout(timeout);
+    }
   }
 }

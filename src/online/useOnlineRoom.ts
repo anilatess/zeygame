@@ -1,7 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { hasSupabaseConfig } from '../lib/supabase';
-import { createRoom, fetchRoom, joinRoom, leaveRoom, recoverRoom, setReady } from './room-service';
+import type { GameId } from '../games';
+import {
+  confirmRoomPlaying,
+  createRoom,
+  fetchRoom,
+  finishRoomGame,
+  getServerClockOffset,
+  joinRoom,
+  leaveRoom,
+  recoverRoom,
+  resetRoomSession,
+  selectRoomGame,
+  setReady,
+  startRoomGame,
+  submitRoundScore,
+} from './room-service';
 import { subscribeToRoom } from './room-realtime';
+import type { OnlineEvent } from './online-events';
 import {
   OnlineRoomError,
   type OnlineBusyAction,
@@ -13,12 +29,15 @@ export function useOnlineRoom() {
   const [snapshot, setSnapshot] = useState<RoomSnapshot | null>(null);
   const [presence, setPresence] = useState<PresenceState>({});
   const [connected, setConnected] = useState(false);
+  const [clockOffsetMs, setClockOffsetMs] = useState(0);
   const [busy, setBusy] = useState<OnlineBusyAction>(hasSupabaseConfig() ? 'recovering' : null);
   const [error, setError] = useState(
     hasSupabaseConfig() ? '' : 'Online mod için Supabase ayarları eksik.',
   );
   const mounted = useRef(true);
   const busyRef = useRef(false);
+  const sendEventRef = useRef<((event: OnlineEvent) => Promise<void>) | null>(null);
+  const eventSubscribers = useRef(new Set<(event: OnlineEvent) => void>());
 
   const applyError = useCallback((reason: unknown) => {
     setError(
@@ -33,7 +52,14 @@ export function useOnlineRoom() {
         mounted.current = false;
       };
     void recoverRoom()
-      .then((room) => {
+      .then(async (room) => {
+        if (room?.room.startAt && room.room.sessionState !== 'waiting') {
+          try {
+            setClockOffsetMs(await getServerClockOffset());
+          } catch {
+            // The room can still recover with the browser clock as fallback.
+          }
+        }
         if (mounted.current) setSnapshot(room);
       })
       .catch(applyError)
@@ -47,27 +73,77 @@ export function useOnlineRoom() {
 
   const roomId = snapshot?.room.id;
   const currentUserId = snapshot?.currentUserId;
+  const acceptSnapshot = useCallback(async (next: RoomSnapshot | null) => {
+    if (next?.room.startAt && next.room.sessionState !== 'waiting') {
+      try {
+        setClockOffsetMs(await getServerClockOffset());
+      } catch {
+        // The absolute server timestamp remains usable; browser clock is the fallback.
+      }
+    }
+    if (mounted.current) setSnapshot(next);
+  }, []);
+
   const refresh = useCallback(async () => {
     if (!roomId) return;
     try {
       const next = await fetchRoom(roomId);
       if (mounted.current) {
-        setSnapshot(next);
+        await acceptSnapshot(next);
         if (next.room.status === 'closed') setError('Ev sahibi odadan ayrıldı.');
       }
     } catch (reason) {
       if (mounted.current) applyError(reason);
     }
-  }, [applyError, roomId]);
+  }, [acceptSnapshot, applyError, roomId]);
 
   useEffect(() => {
     if (!roomId || !currentUserId) return;
-    return subscribeToRoom(roomId, currentUserId, {
+    const realtime = subscribeToRoom(roomId, currentUserId, {
       onRoomChanged: () => void refresh(),
       onPresenceChanged: setPresence,
-      onConnectionChanged: setConnected,
+      onConnectionChanged: (nextConnected) => {
+        setConnected(nextConnected);
+        if (nextConnected) void refresh();
+      },
+      onEvent: (event) => {
+        if (event.senderUserId === currentUserId) return;
+        for (const subscriber of eventSubscribers.current) subscriber(event);
+      },
     });
+    sendEventRef.current = realtime.send;
+    return () => {
+      sendEventRef.current = null;
+      realtime.unsubscribe();
+    };
   }, [currentUserId, refresh, roomId]);
+
+  useEffect(() => {
+    if (!roomId) return;
+    const recoverConnection = () => void refresh();
+    const recoverVisibility = () => {
+      if (document.visibilityState === 'visible') void refresh();
+    };
+    window.addEventListener('online', recoverConnection);
+    document.addEventListener('visibilitychange', recoverVisibility);
+    return () => {
+      window.removeEventListener('online', recoverConnection);
+      document.removeEventListener('visibilitychange', recoverVisibility);
+    };
+  }, [refresh, roomId]);
+
+  const sendEvent = useCallback(async (event: OnlineEvent) => {
+    const send = sendEventRef.current;
+    if (!send) throw new OnlineRoomError('network', 'Canlı bağlantı henüz hazır değil.');
+    await send(event);
+  }, []);
+
+  const subscribeEvent = useCallback((listener: (event: OnlineEvent) => void) => {
+    eventSubscribers.current.add(listener);
+    return () => {
+      eventSubscribers.current.delete(listener);
+    };
+  }, []);
 
   const run = useCallback(
     async (action: Exclude<OnlineBusyAction, 'recovering' | null>, task: () => Promise<void>) => {
@@ -91,9 +167,38 @@ export function useOnlineRoom() {
     snapshot,
     presence,
     connected,
+    clockOffsetMs,
     busy,
     error,
     configured: hasSupabaseConfig(),
+    sendEvent,
+    subscribeEvent,
+    publishScore: async (
+      roundId: string,
+      playerSlot: 1 | 2,
+      score: number,
+      sequence: number,
+      final: boolean,
+    ) => {
+      if (!snapshot) return;
+      const event: OnlineEvent = {
+        kind: 'score',
+        roundId,
+        senderUserId: snapshot.currentUserId,
+        playerSlot,
+        score,
+        sequence,
+        final,
+      };
+      try {
+        await Promise.all([
+          sendEvent(event),
+          submitRoundScore(snapshot.room.id, roundId, score, sequence, final),
+        ]);
+      } catch (reason) {
+        applyError(reason);
+      }
+    },
     create: (name: string) => run('creating', async () => setSnapshot(await createRoom(name))),
     join: (code: string, name: string) =>
       run('joining', async () => setSnapshot(await joinRoom(code, name))),
@@ -103,6 +208,37 @@ export function useOnlineRoom() {
         const self = snapshot.players.find((player) => player.userId === snapshot.currentUserId);
         if (!self) return;
         await setReady(snapshot.room.id, !self.isReady);
+        await refresh();
+      }),
+    selectGame: (gameId: GameId) =>
+      run('selecting', async () => {
+        if (!snapshot) return;
+        await selectRoomGame(snapshot.room.id, gameId);
+        await refresh();
+      }),
+    startGame: () =>
+      run('starting', async () => {
+        if (!snapshot) return;
+        const result = await startRoomGame(snapshot.room.id);
+        setClockOffsetMs(Date.parse(result.serverNow) - Date.now());
+        await refresh();
+      }),
+    confirmPlaying: (roundId: string) =>
+      run('starting', async () => {
+        if (!snapshot) return;
+        await confirmRoomPlaying(snapshot.room.id, roundId);
+        await refresh();
+      }),
+    finishGame: (roundId: string) =>
+      run('finishing', async () => {
+        if (!snapshot) return;
+        await finishRoomGame(snapshot.room.id, roundId);
+        await refresh();
+      }),
+    resetSession: () =>
+      run('resetting', async () => {
+        if (!snapshot) return;
+        await resetRoomSession(snapshot.room.id);
         await refresh();
       }),
     leave: () =>

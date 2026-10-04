@@ -14,13 +14,18 @@ function emptyPlayer(): PlayerTracking {
 
 /** Collapses either camera half into Player 1 while leaving Player 2 passive. */
 export function toSoloPlayers(players: PlayersTracking): PlayersTracking {
+  return toSinglePlayer(players, 1);
+}
+
+/** Collapses either camera half into the requested online player slot. */
+export function toSinglePlayer(players: PlayersTracking, slot: 1 | 2): PlayersTracking {
   const source = players[0].pose?.detected || players[0].face.detected ? players[0] : players[1];
-  const one = emptyPlayer();
-  one.hands = [...players[0].hands, ...players[1].hands];
-  one.detected = one.hands.length > 0;
-  one.pose = source.pose;
-  one.face = source.face;
-  return [one, emptyPlayer()];
+  const local = emptyPlayer();
+  local.hands = [...players[0].hands, ...players[1].hands];
+  local.detected = local.hands.length > 0;
+  local.pose = source.pose;
+  local.face = source.face;
+  return slot === 1 ? [local, emptyPlayer()] : [emptyPlayer(), local];
 }
 
 const CONNECTIONS: ReadonlyArray<readonly [number, number]> = [

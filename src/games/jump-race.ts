@@ -5,6 +5,7 @@ import { audio } from '../audio';
 type JumpState = { samples: number[]; reference: number | null; jumping: boolean; label: string };
 
 export class JumpRace implements MiniGame {
+  readonly id = 'jump-race' as const;
   readonly name = 'Zıplama Yarışı';
   readonly description = 'Zıplayarak puan topla.';
   readonly tracking = 'pose' as const;
