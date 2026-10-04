@@ -7,6 +7,12 @@ import {
   withCameraPreparationTimeout,
 } from '../online/camera-preparation';
 import { countdownLabel, remainingUntilStart } from '../online/session-clock';
+import {
+  canConfirmPlaying,
+  type CountdownMeasurement,
+  onlineEngineSessionKey,
+  shouldStartOnlineEngine,
+} from '../online/session-start';
 import { useOnlineRoom } from '../online/useOnlineRoom';
 import { useRoomPeer } from '../online/use-room-peer';
 import { createPeerMediaStream } from '../online/webrtc-config';
@@ -196,11 +202,19 @@ function LobbyScreen({
   const controllerRef = useRef<GameController | null>(null);
   const [cameraMode, setCameraMode] = useState<CameraPreparationMode>('none');
   const [cameraBusy, setCameraBusy] = useState(false);
-  const [remainingMs, setRemainingMs] = useState(0);
+  const [countdownMeasurement, setCountdownMeasurement] = useState<CountdownMeasurement | null>(
+    null,
+  );
   const [peerLocalStream, setPeerLocalStream] = useState<MediaStream | null>(null);
   const stopPeerAudioRef = useRef<() => void>(() => undefined);
   const preparedGameRef = useRef(snapshot.room.selectedGameId);
   const confirmedRoundRef = useRef<string | null>(null);
+  const confirmingRoundRef = useRef<string | null>(null);
+  const confirmRetryTimerRef = useRef(0);
+  const [confirmRetry, setConfirmRetry] = useState(0);
+  const confirmPlayingRef = useRef(online.confirmPlaying);
+  confirmPlayingRef.current = online.confirmPlaying;
+  const startedEngineSessionRef = useRef<string | null>(null);
   const scoreSequenceRef = useRef(0);
   const remoteScoreSequencesRef = useRef<[number, number]>([0, 0]);
   const scoreRoundRef = useRef(snapshot.room.roundId);
@@ -214,6 +228,12 @@ function LobbyScreen({
     snapshot.players.every((player) => player.isReady) &&
     Boolean(snapshot.room.selectedGameId) &&
     cameraMode !== 'none';
+  const remainingMs =
+    countdownMeasurement?.roundId === snapshot.room.roundId
+      ? countdownMeasurement.remainingMs
+      : snapshot.room.startAt
+        ? remainingUntilStart(snapshot.room.startAt, online.clockOffsetMs)
+        : 0;
   const peer = useRoomPeer({
     enabled: cameraMode === 'camera',
     localStream: peerLocalStream,
@@ -248,6 +268,7 @@ function LobbyScreen({
 
   useEffect(() => {
     if (preparedGameRef.current !== snapshot.room.selectedGameId) {
+      const preparationWasActive = cameraMode !== 'none';
       preparedGameRef.current = snapshot.room.selectedGameId;
       controllerRef.current?.stop();
       stopPeerAudioRef.current();
@@ -257,46 +278,90 @@ function LobbyScreen({
       setCameraBusy(false);
       scoreSequenceRef.current = 0;
       remoteScoreSequencesRef.current = [0, 0];
+      if (preparationWasActive)
+        setNotice('Oyun değişti. Hazır olmadan önce kameranı yeniden hazırla.');
     }
-  }, [snapshot.room.selectedGameId]);
+  }, [cameraMode, setNotice, snapshot.room.selectedGameId]);
 
   useEffect(() => {
-    if (!snapshot.room.startAt || snapshot.room.sessionState !== 'countdown') return;
+    const roundId = snapshot.room.roundId;
+    if (!roundId || !snapshot.room.startAt || snapshot.room.sessionState !== 'countdown') return;
     let frame = 0;
     const tick = () => {
       const remaining = remainingUntilStart(snapshot.room.startAt!, online.clockOffsetMs);
-      setRemainingMs(remaining);
+      setCountdownMeasurement({ roundId, remainingMs: remaining });
       if (remaining > 0) frame = requestAnimationFrame(tick);
     };
     tick();
     return () => cancelAnimationFrame(frame);
-  }, [online.clockOffsetMs, snapshot.room.sessionState, snapshot.room.startAt]);
+  }, [
+    online.clockOffsetMs,
+    snapshot.room.roundId,
+    snapshot.room.sessionState,
+    snapshot.room.startAt,
+  ]);
 
   useEffect(() => {
     const roundId = snapshot.room.roundId;
     if (
-      host &&
-      roundId &&
-      snapshot.room.sessionState === 'countdown' &&
-      remainingMs <= 0 &&
-      confirmedRoundRef.current !== roundId
+      canConfirmPlaying({
+        host,
+        sessionState: snapshot.room.sessionState,
+        roundId,
+        measurement: countdownMeasurement,
+        confirmedRoundId: confirmedRoundRef.current,
+        confirmingRoundId: confirmingRoundRef.current,
+      }) &&
+      roundId
     ) {
-      confirmedRoundRef.current = roundId;
-      void online.confirmPlaying(roundId);
+      confirmingRoundRef.current = roundId;
+      void confirmPlayingRef.current(roundId).then((confirmed) => {
+        if (confirmingRoundRef.current !== roundId) return;
+        confirmingRoundRef.current = null;
+        if (confirmed) {
+          confirmedRoundRef.current = roundId;
+          return;
+        }
+        window.clearTimeout(confirmRetryTimerRef.current);
+        confirmRetryTimerRef.current = window.setTimeout(
+          () => setConfirmRetry((attempt) => attempt + 1),
+          300,
+        );
+      });
     }
-  }, [host, online.confirmPlaying, remainingMs, snapshot.room.roundId, snapshot.room.sessionState]);
+  }, [confirmRetry, countdownMeasurement, host, snapshot.room.roundId, snapshot.room.sessionState]);
 
   useEffect(() => {
-    if (!activeSession || cameraMode !== 'camera' || !snapshot.room.startAt) return;
-    controllerRef.current?.runOnline(
+    const roundId = snapshot.room.roundId;
+    const gameId = snapshot.room.selectedGameId;
+    if (
+      !shouldStartOnlineEngine({
+        activeSession,
+        cameraPrepared: cameraMode === 'camera',
+        startAt: snapshot.room.startAt,
+        roundId,
+        gameId,
+        preparedGameId: preparedGameRef.current,
+        startedSessionKey: startedEngineSessionRef.current,
+      }) ||
+      !roundId ||
+      !gameId ||
+      !snapshot.room.startAt
+    )
+      return;
+    const sessionKey = onlineEngineSessionKey(roundId, gameId);
+    const started = controllerRef.current?.runOnline(
       remainingUntilStart(snapshot.room.startAt, online.clockOffsetMs) / 1000,
       snapshot.room.roundSeed,
     );
+    if (started) startedEngineSessionRef.current = sessionKey;
   }, [
     activeSession,
     cameraMode,
     online.clockOffsetMs,
+    snapshot.room.roundId,
     snapshot.room.roundSeed,
+    snapshot.room.selectedGameId,
     snapshot.room.startAt,
   ]);
 
@@ -360,11 +425,16 @@ function LobbyScreen({
       stopPeerAudioRef.current = () => undefined;
       setPeerLocalStream(null);
       setCameraMode('none');
+      startedEngineSessionRef.current = null;
+      confirmingRoundRef.current = null;
+      window.clearTimeout(confirmRetryTimerRef.current);
+      setCountdownMeasurement(null);
     }
   }, [snapshot.room.roundId, snapshot.room.sessionState]);
 
   useEffect(
     () => () => {
+      window.clearTimeout(confirmRetryTimerRef.current);
       stopPeerAudioRef.current();
     },
     [],
@@ -555,24 +625,43 @@ function LobbyScreen({
             </div>
             {host ? (
               <div className="lobby-game-grid">
-                {games.map((game) => (
-                  <button
-                    key={game.id}
-                    className={snapshot.room.selectedGameId === game.id ? 'selected' : ''}
-                    disabled={online.busy !== null || cameraMode !== 'none'}
-                    onClick={() => void online.selectGame(game.id)}
-                  >
-                    <GameIllustration name={game.name} />
-                    <strong>{game.name}</strong>
-                  </button>
-                ))}
+                {games.map((game) => {
+                  const selected = snapshot.room.selectedGameId === game.id;
+                  return (
+                    <button
+                      key={game.id}
+                      className={selected ? 'selected' : ''}
+                      aria-pressed={selected}
+                      disabled={online.busy !== null}
+                      onClick={() => void online.selectGame(game.id)}
+                    >
+                      {selected && (
+                        <>
+                          <span className="selected-game-check" aria-hidden="true">
+                            ✓
+                          </span>
+                          <span className="selected-game-label">SEÇİLDİ</span>
+                        </>
+                      )}
+                      <GameIllustration name={game.name} />
+                      <strong>{game.name}</strong>
+                    </button>
+                  );
+                })}
               </div>
             ) : selectedGame ? (
-              <article className="selected-online-game">
+              <article
+                className="selected-online-game selected"
+                aria-label={`Seçilen oyun: ${selectedGame.name}`}
+              >
+                <span className="selected-game-check" aria-hidden="true">
+                  ✓
+                </span>
                 <GameIllustration name={selectedGame.name} />
                 <div>
                   <span>{playerOne?.displayName} BU OYUNU SEÇTİ</span>
                   <strong>{selectedGame.name}</strong>
+                  <span className="selected-game-label">SEÇİLDİ</span>
                 </div>
               </article>
             ) : (

@@ -61,6 +61,28 @@ assert.match(onlineSources, /rpc\('select_room_game'/);
 assert.match(onlineSources, /rpc\('start_room_game'/);
 assert.doesNotMatch(onlineSources, /setInterval/);
 
+const onlineScreen = read('src/components/OnlineScreen.tsx');
+assert.match(
+  onlineScreen,
+  /const selected = snapshot\.room\.selectedGameId === game\.id/,
+  'exactly one card derives its selected state from selected_game_id',
+);
+assert.match(onlineScreen, /aria-pressed=\{selected\}/);
+assert.match(onlineScreen, /selected && \([\s\S]*selected-game-check[\s\S]*selected-game-label/);
+assert.match(onlineScreen, /className="selected-online-game selected"/);
+assert.match(onlineScreen, /aria-label=\{`Seçilen oyun:/);
+assert.match(onlineScreen, /disabled=\{online\.busy !== null\}/);
+assert.doesNotMatch(
+  onlineScreen,
+  /disabled=\{online\.busy !== null \|\| cameraMode !== 'none'\}/,
+  'camera preparation must not lock pre-session game reselection',
+);
+assert.match(onlineScreen, /Oyun değişti\. Hazır olmadan önce kameranı yeniden hazırla\./);
+const styles = read('src/styles.css');
+assert.match(styles, /\.selected-game-check/);
+assert.match(styles, /@media \(max-width: 760px\)[\s\S]*\.selected-game-check/);
+assert.match(styles, /button\[aria-pressed='true'\]/);
+
 for (const path of ['src/game-controller.ts', 'src/game-manager.ts'])
   assert.doesNotMatch(
     read(path),

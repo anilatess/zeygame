@@ -114,8 +114,8 @@ export class GameController {
     this.elements.root.focus();
   }
 
-  runOnline(startDelaySeconds: number, roundSeed: number | null = null): void {
-    if (!this.prepared || this.running || !this.manager.isOnline()) return;
+  runOnline(startDelaySeconds: number, roundSeed: number | null = null): boolean {
+    if (!this.prepared || this.running || !this.manager.isOnline()) return false;
     this.manager.setOnlineRoundSeed(roundSeed);
     this.running = true;
     this.manager.enterOnlineCalibration(startDelaySeconds);
@@ -124,6 +124,7 @@ export class GameController {
     cancelAnimationFrame(this.frame);
     this.render();
     this.elements.root.focus();
+    return true;
   }
 
   stop(): void {

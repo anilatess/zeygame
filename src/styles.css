@@ -925,6 +925,7 @@ strong,
   gap: 14px;
 }
 .lobby-game-grid button {
+  position: relative;
   min-width: 0;
   padding: 12px;
   border: 3px solid var(--zg-ink);
@@ -945,6 +946,46 @@ strong,
   transform: translateY(2px);
   box-shadow: 2px 2px 0 var(--zg-ink);
 }
+.lobby-game-grid button[aria-pressed='true'] {
+  outline: 4px solid var(--zg-cream);
+  outline-offset: -8px;
+}
+.selected-game-check {
+  position: absolute;
+  top: -12px;
+  right: -10px;
+  z-index: 3;
+  display: grid !important;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 3px solid var(--zg-ink);
+  border-radius: 50%;
+  background: var(--zg-cream);
+  color: var(--zg-ink);
+  box-shadow: 4px 4px 0 var(--zg-ink);
+  font:
+    1000 1.7rem/1 'Nunito',
+    sans-serif !important;
+  transform: rotate(7deg);
+}
+.selected-game-label {
+  position: relative;
+  z-index: 2;
+  display: inline-block !important;
+  width: fit-content;
+  margin: 8px auto 0;
+  padding: 4px 9px;
+  border: 2px solid var(--zg-ink);
+  border-radius: 999px;
+  background: var(--zg-cream);
+  color: var(--zg-ink);
+  box-shadow: 2px 2px 0 var(--zg-ink);
+  font:
+    1000 0.68rem/1 'Nunito',
+    sans-serif !important;
+  letter-spacing: 0.08em;
+}
 .lobby-game-grid .game-illustration {
   height: 92px;
 }
@@ -956,10 +997,18 @@ strong,
     sans-serif;
 }
 .selected-online-game {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 24px;
+  width: min(560px, 100%);
+  margin: 0 auto;
+  padding: 18px 24px;
+  border: 3px solid var(--zg-ink);
+  border-radius: var(--zg-radius-md);
+  background: var(--zg-coral);
+  box-shadow: 5px 5px 0 var(--zg-ink);
 }
 .selected-online-game .game-illustration {
   width: 180px;
@@ -972,6 +1021,9 @@ strong,
 .selected-online-game span {
   font-size: 0.75rem;
   font-weight: 900;
+}
+.selected-online-game .selected-game-label {
+  margin: 10px 0 0;
 }
 .selected-online-game strong {
   font:
@@ -1127,6 +1179,13 @@ strong,
   .selected-online-game {
     flex-direction: column;
     gap: 8px;
+  }
+  .selected-game-check {
+    top: -9px;
+    right: -7px;
+    width: 42px;
+    height: 42px;
+    font-size: 1.45rem !important;
   }
 }
 .ready-button.is-ready {

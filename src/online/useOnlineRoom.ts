@@ -146,15 +146,20 @@ export function useOnlineRoom() {
   }, []);
 
   const run = useCallback(
-    async (action: Exclude<OnlineBusyAction, 'recovering' | null>, task: () => Promise<void>) => {
-      if (busyRef.current) return;
+    async (
+      action: Exclude<OnlineBusyAction, 'recovering' | null>,
+      task: () => Promise<void>,
+    ): Promise<boolean> => {
+      if (busyRef.current) return false;
       busyRef.current = true;
       setBusy(action);
       setError('');
       try {
         await task();
+        return true;
       } catch (reason) {
         applyError(reason);
+        return false;
       } finally {
         busyRef.current = false;
         if (mounted.current) setBusy(null);
