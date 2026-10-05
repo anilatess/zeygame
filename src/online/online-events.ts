@@ -24,7 +24,19 @@ export type OnlineSignalEvent = {
   candidate?: RTCIceCandidateInit;
 };
 
-export type OnlineEvent = OnlineScoreEvent | OnlineMediaReadyEvent | OnlineSignalEvent;
+export const ONLINE_REACTIONS = ['👏', '😂', '🔥', '💪'] as const;
+export type OnlineReaction = (typeof ONLINE_REACTIONS)[number];
+
+export type OnlineReactionEvent = {
+  kind: 'reaction';
+  senderUserId: string;
+  playerSlot: 1 | 2;
+  reaction: OnlineReaction;
+  sentAt: number;
+};
+
+export type OnlineEvent =
+  OnlineScoreEvent | OnlineMediaReadyEvent | OnlineSignalEvent | OnlineReactionEvent;
 
 export function isOnlineEvent(value: unknown): value is OnlineEvent {
   if (!value || typeof value !== 'object') return false;
@@ -32,6 +44,13 @@ export function isOnlineEvent(value: unknown): value is OnlineEvent {
   if (typeof event.kind !== 'string' || typeof event.senderUserId !== 'string') return false;
   if (event.playerSlot !== 1 && event.playerSlot !== 2) return false;
   if (event.kind === 'media-ready') return true;
+  if (event.kind === 'reaction')
+    return (
+      typeof event.reaction === 'string' &&
+      ONLINE_REACTIONS.includes(event.reaction as OnlineReaction) &&
+      typeof event.sentAt === 'number' &&
+      Number.isFinite(event.sentAt)
+    );
   if (event.kind === 'score')
     return (
       typeof event.roundId === 'string' &&

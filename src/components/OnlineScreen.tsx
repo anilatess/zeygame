@@ -18,6 +18,7 @@ import { useRoomPeer } from '../online/use-room-peer';
 import { createPeerMediaStream } from '../online/webrtc-config';
 import { createRoomInviteUrl, roomCodeFromInvite } from '../online/invite-link';
 import { calculateMatchScore } from '../online/match-score';
+import type { OnlineReaction } from '../online/online-events';
 import type { RoomPlayer } from '../online/room-types';
 import type { MiniGame } from '../types';
 import { GameHost } from './GameHost';
@@ -229,6 +230,11 @@ function LobbyScreen({
     null,
   );
   const [peerLocalStream, setPeerLocalStream] = useState<MediaStream | null>(null);
+  const [remoteReaction, setRemoteReaction] = useState<{
+    value: OnlineReaction;
+    id: number;
+  } | null>(null);
+  const reactionTimerRef = useRef(0);
   const stopPeerAudioRef = useRef<() => void>(() => undefined);
   const preparedGameRef = useRef(snapshot.room.selectedGameId);
   const confirmedRoundRef = useRef<string | null>(null);
@@ -409,6 +415,12 @@ function LobbyScreen({
   useEffect(
     () =>
       online.subscribeEvent((event) => {
+        if (event.kind === 'reaction' && event.senderUserId !== snapshot.currentUserId) {
+          window.clearTimeout(reactionTimerRef.current);
+          setRemoteReaction({ value: event.reaction, id: event.sentAt });
+          reactionTimerRef.current = window.setTimeout(() => setRemoteReaction(null), 1800);
+          return;
+        }
         if (event.kind !== 'score' || event.roundId !== snapshot.room.roundId) return;
         const index = event.playerSlot - 1;
         if (event.sequence <= remoteScoreSequencesRef.current[index]) return;
@@ -491,6 +503,7 @@ function LobbyScreen({
   useEffect(
     () => () => {
       window.clearTimeout(confirmRetryTimerRef.current);
+      window.clearTimeout(reactionTimerRef.current);
       stopPeerAudioRef.current();
     },
     [],
@@ -581,6 +594,19 @@ function LobbyScreen({
     }
   };
 
+  const sendReaction = (reaction: OnlineReaction) => {
+    if (!self) return;
+    void online
+      .sendEvent({
+        kind: 'reaction',
+        senderUserId: snapshot.currentUserId,
+        playerSlot: self.playerSlot,
+        reaction,
+        sentAt: Date.now(),
+      })
+      .catch(() => setNotice('Tepki gönderilemedi.'));
+  };
+
   return (
     <main
       ref={pageRef}
@@ -607,6 +633,8 @@ function LobbyScreen({
         pending={online.scorePending}
         onBack={onBack}
         onFullscreen={() => void requestOnlineFullscreen(pageRef.current)}
+        reaction={remoteReaction}
+        onReaction={sendReaction}
         remote={<RemotePeerVideo stream={peer.remoteStream} state={peer.state} />}
       >
         <GameHost
@@ -809,6 +837,25 @@ function LobbyScreen({
             )}
           </section>
           <section className="lobby-actions">
+            <div className="ready-checklist" aria-label="Oyuna hazırlık durumu">
+              <strong>BAŞLAMADAN ÖNCE</strong>
+              <span className={selectedGame ? 'done' : ''}>1. Oyun seçildi</span>
+              <span className={cameraMode !== 'none' ? 'done' : ''}>2. Kamera hazır</span>
+              <span className={self?.isReady ? 'done' : ''}>3. Sen hazırsın</span>
+              <span className={snapshot.players.length === 2 ? 'done' : ''}>
+                4. Arkadaşın odada
+              </span>
+              <span
+                className={
+                  snapshot.players.length === 2 &&
+                  snapshot.players.every((player) => player.isReady)
+                    ? 'done'
+                    : ''
+                }
+              >
+                5. İki oyuncu da hazır
+              </span>
+            </div>
             <button
               className="zg-button camera-ready"
               disabled={

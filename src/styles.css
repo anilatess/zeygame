@@ -935,6 +935,35 @@ strong,
   grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
+.ready-checklist {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  padding: 14px;
+  border: 3px solid var(--zg-ink);
+  border-radius: 16px;
+  background: white;
+}
+.ready-checklist strong {
+  grid-column: 1 / -1;
+  text-align: center;
+}
+.ready-checklist span {
+  padding: 8px;
+  border-radius: 10px;
+  background: #ece9e3;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.ready-checklist span.done {
+  background: #b8f1d9;
+  color: #205c48;
+}
+.ready-checklist span.done::before {
+  content: '✓ ';
+}
 
 .lobby-game-picker {
   width: min(1120px, calc(100% - 32px));
@@ -1900,6 +1929,13 @@ strong,
   .lobby-actions {
     grid-template-columns: 1fr;
   }
+  .ready-checklist {
+    grid-template-columns: 1fr 1fr;
+  }
+  .ready-checklist strong,
+  .ready-checklist span:last-child {
+    grid-column: 1 / -1;
+  }
   .zg-page::after {
     width: 55px;
     height: 55px;
@@ -2294,6 +2330,39 @@ strong,
 .online-arena-actions span {
   font-size: 10px;
   text-align: center;
+}
+.arena-reactions {
+  display: flex;
+  gap: 4px;
+}
+.online-arena-actions .arena-reactions button {
+  min-width: 32px;
+  padding: 4px;
+  font-size: 18px;
+}
+.remote-reaction {
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  bottom: 18%;
+  transform: translateX(-50%);
+  font-size: clamp(4rem, 14vw, 8rem);
+  filter: drop-shadow(0 8px 10px #0008);
+  animation: remote-reaction-pop 1.8s ease-out both;
+}
+@keyframes remote-reaction-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 30%) scale(0.4);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -70%) scale(0.9);
+  }
 }
 .online-arena .play-hud,
 .online-arena .countdown-screen,

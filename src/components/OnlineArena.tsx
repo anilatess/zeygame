@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ONLINE_REACTIONS, type OnlineReaction } from '../online/online-events';
 
 export function usePortrait(): boolean {
   const [portrait, setPortrait] = useState(
@@ -62,6 +63,8 @@ export function OnlineArena({
   pending,
   onBack,
   onFullscreen,
+  reaction,
+  onReaction,
 }: {
   active: boolean;
   children: ReactNode;
@@ -75,6 +78,8 @@ export function OnlineArena({
   pending: boolean;
   onBack: () => void;
   onFullscreen: () => void;
+  reaction: { value: OnlineReaction; id: number } | null;
+  onReaction: (reaction: OnlineReaction) => void;
 }) {
   return (
     <section className="online-arena" hidden={!active} aria-label="İki kişilik online oyun alanı">
@@ -83,6 +88,11 @@ export function OnlineArena({
       </div>
       <div className="online-remote-pane" aria-label="Rakibin kamera görüntüsü">
         {remote}
+        {reaction && (
+          <span className="remote-reaction" key={reaction.id} role="status" aria-live="polite">
+            {reaction.value}
+          </span>
+        )}
       </div>
       <header className="online-arena-hud">
         <div className="arena-score local">
@@ -100,7 +110,18 @@ export function OnlineArena({
       </header>
       <nav className="online-arena-actions" aria-label="Oyun kontrolleri">
         <button onClick={onBack}>Odadan ayrıl</button>
-        <span role="status">{pending ? 'Skor gönderiliyor…' : 'CANLI KARŞILAŞMA'}</span>
+        <div className="arena-reactions" aria-label="Rakibe tepki gönder">
+          {ONLINE_REACTIONS.map((item) => (
+            <button
+              key={item}
+              onClick={() => onReaction(item)}
+              aria-label={`${item} tepkisi gönder`}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        <span role="status">{pending ? 'Skor gönderiliyor…' : 'CANLI'}</span>
         <button onClick={onFullscreen}>Tam ekran</button>
       </nav>
     </section>
