@@ -22,6 +22,7 @@ import { difficultyForRound } from '../online/match-difficulty';
 import type { OnlineReaction } from '../online/online-events';
 import type { RoomPlayer } from '../online/room-types';
 import type { MiniGame } from '../types';
+import type { OnlineMatchResult } from '../profile-store';
 import { GameHost } from './GameHost';
 import {
   OnlineArena,
@@ -36,16 +37,20 @@ import { GameIllustration, Mascot } from './ZeyVisuals';
 export function OnlineScreen({
   onBack,
   games,
+  defaultName,
+  onMatchComplete,
 }: {
   onBack: () => void;
   games: readonly MiniGame[];
+  defaultName: string;
+  onMatchComplete: (result: OnlineMatchResult) => void;
 }) {
   const onlineGames = useMemo(() => [...games], [games]);
   const online = useOnlineRoom();
   const portrait = usePortrait();
   const invitedRoomCode = useMemo(() => roomCodeFromInvite(window.location.search), []);
   const [tab, setTab] = useState<'create' | 'join'>(invitedRoomCode ? 'join' : 'create');
-  const [name, setName] = useState('');
+  const [name, setName] = useState(defaultName);
   const [code, setCode] = useState(invitedRoomCode);
   const [notice, setNotice] = useState('');
 
@@ -63,6 +68,7 @@ export function OnlineScreen({
         games={onlineGames}
         onBack={() => void leaveAndBack()}
         portrait={portrait}
+        onMatchComplete={onMatchComplete}
       />
     );
   }
@@ -200,6 +206,7 @@ function LobbyScreen({
   onBack,
   games,
   portrait,
+  onMatchComplete,
 }: {
   online: OnlineState;
   notice: string;
@@ -207,6 +214,7 @@ function LobbyScreen({
   onBack: () => void;
   games: MiniGame[];
   portrait: boolean;
+  onMatchComplete: (result: OnlineMatchResult) => void;
 }) {
   const { snapshot } = online;
   if (!snapshot) return null;
@@ -221,6 +229,24 @@ function LobbyScreen({
   const match = useMemo(() => calculateMatchScore(snapshot.scores), [snapshot.scores]);
   const nextRoundNumber = Math.min(3, match.rounds.length + 1);
   const difficulty = difficultyForRound(match.rounds.length);
+  useEffect(() => {
+    if (!match.complete || !self || !snapshot.room.selectedGameId) return;
+    const localWins = self.playerSlot === 1 ? match.winsOne : match.winsTwo;
+    const remoteWins = self.playerSlot === 1 ? match.winsTwo : match.winsOne;
+    const bestScore = Math.max(
+      0,
+      ...snapshot.scores
+        .filter((score) => score.playerSlot === self.playerSlot)
+        .map((score) => score.score),
+    );
+    onMatchComplete({
+      matchId: snapshot.room.id,
+      gameId: snapshot.room.selectedGameId,
+      localWins,
+      remoteWins,
+      bestScore,
+    });
+  }, [match.complete, match.winsOne, match.winsTwo, onMatchComplete, self, snapshot]);
   const controllerRef = useRef<GameController | null>(null);
   const pageRef = useRef<HTMLElement>(null);
   const [liveLocalScore, setLiveLocalScore] = useState(0);

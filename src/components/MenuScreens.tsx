@@ -3,8 +3,9 @@ import type { MiniGame } from '../types';
 import { ZeyHeader } from './ZeyHeader';
 import { GameIllustration, Mascot } from './ZeyVisuals';
 import { OnlineScreen } from './OnlineScreen';
+import { AVATARS, type OnlineMatchResult, type PlayerProfile } from '../profile-store';
 
-export type MenuScreen = 'menu' | 'games' | 'howto' | 'select' | 'solo-test' | 'online';
+export type MenuScreen = 'menu' | 'games' | 'howto' | 'select' | 'solo-test' | 'online' | 'profile';
 
 export function MainMenu({
   gameCount,
@@ -12,12 +13,14 @@ export function MainMenu({
   busy,
   onNavigate,
   onStartParty,
+  profile,
 }: {
   gameCount: number;
   status: string;
   busy: boolean;
   onNavigate: (screen: MenuScreen) => void;
   onStartParty: () => void;
+  profile: PlayerProfile;
 }) {
   return (
     <main className="zg-page zg-home">
@@ -81,6 +84,10 @@ export function MainMenu({
         </ModeCard>
       </section>
       <div className="home-shortcuts">
+        <button className="profile-shortcut" onClick={() => onNavigate('profile')}>
+          <span>{profile.avatar}</span>
+          {profile.displayName || 'Profilim'} · {profile.stats.wins} galibiyet
+        </button>
         <button onClick={() => onNavigate('select')}>Bir oyun seç</button>
         <button onClick={() => onNavigate('games')}>Oyunları keşfet</button>
         <button onClick={() => onNavigate('howto')}>Nasıl oynanır?</button>
@@ -156,6 +163,9 @@ export function InfoScreen({
   busy,
   onBack,
   onPlay,
+  profile,
+  onProfileChange,
+  onOnlineMatchComplete,
 }: {
   kind: Exclude<MenuScreen, 'menu'>;
   games: readonly MiniGame[];
@@ -163,8 +173,23 @@ export function InfoScreen({
   busy: boolean;
   onBack: () => void;
   onPlay: (index: number, solo: boolean) => void;
+  profile: PlayerProfile;
+  onProfileChange: (profile: PlayerProfile) => void;
+  onOnlineMatchComplete: (result: OnlineMatchResult) => void;
 }) {
-  if (kind === 'online') return <OnlineScreen onBack={onBack} games={games} />;
+  if (kind === 'online')
+    return (
+      <OnlineScreen
+        onBack={onBack}
+        games={games}
+        defaultName={profile.displayName}
+        onMatchComplete={onOnlineMatchComplete}
+      />
+    );
+  if (kind === 'profile')
+    return (
+      <ProfileScreen profile={profile} onChange={onProfileChange} onBack={onBack} games={games} />
+    );
   if (kind === 'howto') return <HowTo gameCount={games.length} onBack={onBack} />;
   return (
     <GameLibrary
@@ -175,6 +200,91 @@ export function InfoScreen({
       onBack={onBack}
       onPlay={onPlay}
     />
+  );
+}
+
+function ProfileScreen({
+  profile,
+  onChange,
+  onBack,
+  games,
+}: {
+  profile: PlayerProfile;
+  onChange: (profile: PlayerProfile) => void;
+  onBack: () => void;
+  games: readonly MiniGame[];
+}) {
+  const [draftName, setDraftName] = useState(profile.displayName);
+  const bestGame = games
+    .map((game) => ({ game, score: profile.stats.bestScores[game.id] ?? 0 }))
+    .sort((a, b) => b.score - a.score)[0];
+  const save = () => onChange({ ...profile, displayName: draftName.trim().slice(0, 20) });
+  return (
+    <main className="zg-page profile-page">
+      <ZeyHeader onHome={onBack} />
+      <section className="profile-card">
+        <span className="zg-sticker yellow">OYUNCU PROFİLİ</span>
+        <div className="profile-avatar-large">{profile.avatar}</div>
+        <h1>{profile.displayName || 'Yeni Oyuncu'}</h1>
+        <label htmlFor="profile-name">OYUNCU ADI</label>
+        <div className="profile-name-edit">
+          <input
+            id="profile-name"
+            value={draftName}
+            maxLength={20}
+            placeholder="Adını yaz"
+            onChange={(event) => setDraftName(event.target.value)}
+          />
+          <button className="zg-button primary" onClick={save}>
+            KAYDET
+          </button>
+        </div>
+        <fieldset className="avatar-picker">
+          <legend>AVATARINI SEÇ</legend>
+          {AVATARS.map((avatar) => (
+            <button
+              key={avatar}
+              className={profile.avatar === avatar ? 'selected' : ''}
+              aria-pressed={profile.avatar === avatar}
+              onClick={() => onChange({ ...profile, avatar })}
+            >
+              {avatar}
+            </button>
+          ))}
+        </fieldset>
+      </section>
+      <section className="profile-stats" aria-label="Oyuncu istatistikleri">
+        <article>
+          <strong>{profile.stats.matchesPlayed}</strong>
+          <span>Maç</span>
+        </article>
+        <article>
+          <strong>{profile.stats.wins}</strong>
+          <span>Galibiyet</span>
+        </article>
+        <article>
+          <strong>{profile.stats.losses}</strong>
+          <span>Mağlubiyet</span>
+        </article>
+        <article>
+          <strong>{profile.stats.draws}</strong>
+          <span>Beraberlik</span>
+        </article>
+        <article>
+          <strong>{profile.stats.currentStreak}</strong>
+          <span>Seri</span>
+        </article>
+        <article>
+          <strong>{profile.stats.bestStreak}</strong>
+          <span>En iyi seri</span>
+        </article>
+      </section>
+      <section className="profile-best">
+        <span>EN İYİ OYUN</span>
+        <strong>{bestGame?.score ? bestGame.game.name : 'Henüz maç yok'}</strong>
+        <b>{bestGame?.score ?? 0} puan</b>
+      </section>
+    </main>
   );
 }
 

@@ -1,10 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GameHost } from './components/GameHost';
 import { InfoScreen, MainMenu, type MenuScreen } from './components/MenuScreens';
 import type { GameController } from './game-controller';
 import { createGames } from './games';
 import { activateServiceWorkerUpdate, registerServiceWorker } from './service-worker';
 import type { GameMode, MiniGame } from './types';
+import {
+  loadPlayerProfile,
+  recordOnlineMatch,
+  savePlayerProfile,
+  type OnlineMatchResult,
+  type PlayerProfile,
+} from './profile-store';
 
 export default function App() {
   const games = useMemo<MiniGame[]>(() => createGames(), []);
@@ -13,6 +20,7 @@ export default function App() {
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
+  const [profile, setProfile] = useState(loadPlayerProfile);
   const updateRequested = useRef(false);
 
   useEffect(() => {
@@ -31,6 +39,10 @@ export default function App() {
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
   });
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [screen]);
 
   const startSession = async (mode: GameMode, selectedIndex?: number) => {
     if (busy) return;
@@ -81,6 +93,19 @@ export default function App() {
     );
   };
 
+  const updateProfile = useCallback((next: PlayerProfile) => {
+    savePlayerProfile(next);
+    setProfile(next);
+  }, []);
+
+  const recordMatch = useCallback((result: OnlineMatchResult) => {
+    setProfile((current) => {
+      const next = recordOnlineMatch(current, result);
+      if (next !== current) savePlayerProfile(next);
+      return next;
+    });
+  }, []);
+
   return (
     <>
       <section className="app" hidden={screen === 'game'}>
@@ -89,6 +114,7 @@ export default function App() {
             gameCount={games.length}
             status={status}
             busy={busy}
+            profile={profile}
             onNavigate={(next) => {
               setStatus('');
               setScreen(next);
@@ -101,6 +127,9 @@ export default function App() {
             games={games}
             status={status}
             busy={busy}
+            profile={profile}
+            onProfileChange={updateProfile}
+            onOnlineMatchComplete={recordMatch}
             onBack={returnToMenu}
             onPlay={(index, solo) => void startSession(solo ? 'solo-test' : 'single', index)}
           />
