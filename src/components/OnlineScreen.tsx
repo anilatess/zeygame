@@ -16,6 +16,7 @@ import {
 import { useOnlineRoom } from '../online/useOnlineRoom';
 import { useRoomPeer } from '../online/use-room-peer';
 import { createPeerMediaStream } from '../online/webrtc-config';
+import { createRoomInviteUrl, roomCodeFromInvite } from '../online/invite-link';
 import type { RoomPlayer } from '../online/room-types';
 import type { MiniGame } from '../types';
 import { GameHost } from './GameHost';
@@ -39,9 +40,10 @@ export function OnlineScreen({
   const onlineGames = useMemo(() => [...games], [games]);
   const online = useOnlineRoom();
   const portrait = usePortrait();
-  const [tab, setTab] = useState<'create' | 'join'>('create');
+  const invitedRoomCode = useMemo(() => roomCodeFromInvite(window.location.search), []);
+  const [tab, setTab] = useState<'create' | 'join'>(invitedRoomCode ? 'join' : 'create');
   const [name, setName] = useState('');
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(invitedRoomCode);
   const [notice, setNotice] = useState('');
 
   const leaveAndBack = async () => {
@@ -556,6 +558,26 @@ function LobbyScreen({
     }
   };
 
+  const shareInvite = async () => {
+    const inviteUrl = createRoomInviteUrl(snapshot.room.code);
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'ZeyGame daveti',
+          text: `${self?.displayName ?? 'Arkadaşın'} seni ZeyGame odasına davet ediyor!`,
+          url: inviteUrl,
+        });
+        setNotice('Davet bağlantısı paylaşıldı!');
+        return;
+      }
+      await navigator.clipboard.writeText(inviteUrl);
+      setNotice('Davet bağlantısı kopyalandı!');
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      setNotice('Bağlantı paylaşılamadı. Oda kodunu gönderebilirsin.');
+    }
+  };
+
   return (
     <main
       ref={pageRef}
@@ -676,9 +698,14 @@ function LobbyScreen({
           <section className="room-code-card">
             <span>ODA KODU</span>
             <strong>{snapshot.room.code}</strong>
-            <button className="zg-button" onClick={() => void copyCode()}>
-              KODU KOPYALA
-            </button>
+            <div className="room-share-actions">
+              <button className="zg-button" onClick={() => void shareInvite()}>
+                DAVET LİNKİNİ PAYLAŞ
+              </button>
+              <button className="room-code-copy" onClick={() => void copyCode()}>
+                Yalnızca kodu kopyala
+              </button>
+            </div>
           </section>
           <p className="copy-notice" role="status" aria-live="polite">
             {notice}

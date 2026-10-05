@@ -793,6 +793,21 @@ strong,
   letter-spacing: 0.18em;
   line-height: 1;
 }
+.room-share-actions {
+  display: grid;
+  gap: 0.45rem;
+  justify-items: center;
+}
+.room-code-copy {
+  border: 0;
+  border-bottom: 2px solid currentColor;
+  padding: 0.2rem;
+  background: transparent;
+  color: var(--zg-ink);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
 .copy-notice {
   min-height: 25px;
   margin: 13px 0 0;
