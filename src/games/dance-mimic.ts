@@ -257,6 +257,10 @@ export class DanceMimic implements MiniGame {
     drawSimilarity(context, this.width, this.height, this.best);
     context.restore();
   }
+  resize(width: number, height: number): void {
+    this.width = width;
+    this.height = height;
+  }
   getScores(): [number, number] {
     return [...this.scores];
   }

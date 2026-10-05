@@ -76,6 +76,10 @@ export class JumpRace implements MiniGame {
     context.restore();
   }
 
+  resize(width: number, height: number): void {
+    this.width = width;
+    this.height = height;
+  }
   getScores(): [number, number] {
     return [...this.scores];
   }

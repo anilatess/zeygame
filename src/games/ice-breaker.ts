@@ -118,6 +118,19 @@ export class IceBreaker implements MiniGame {
     context.restore();
   }
 
+  resize(width: number, height: number): void {
+    if (!this.width || !this.height) return;
+    const sx = width / this.width,
+      sy = height / this.height;
+    for (const cube of this.cubes) {
+      cube.x *= sx;
+      cube.y *= sy;
+      cube.size *= Math.min(sx, sy);
+    }
+    this.width = width;
+    this.height = height;
+  }
+
   getScores(): [number, number] {
     return [...this.scores];
   }

@@ -259,14 +259,20 @@ export class GameManager {
     const absent: PlayersTracking = [empty(), empty()];
     // Advance missed time without applying today's observation to past frames.
     // Bounded steps preserve each game's timed rounds and spawning behavior.
+    const gap = targetElapsed - this.elapsed;
     const observedTime = modelReady && elapsed < duration ? Math.min(0.1, Math.max(0, dt)) : 0;
-    while (targetElapsed - this.elapsed > observedTime + 0.000001) {
-      const step = Math.min(0.1, targetElapsed - this.elapsed - observedTime);
-      this.miniGame.update(step, absent, rect);
-      this.elapsed += step;
+    // Millisecond clock rounding is not tracking loss. Only a real frame gap
+    // may inject absent observations (which reset squat/contact state).
+    if (gap > 0.25 || !modelReady || elapsed >= duration) {
+      while (targetElapsed - this.elapsed > observedTime + 0.000001) {
+        const step = Math.min(0.1, targetElapsed - this.elapsed - observedTime);
+        this.miniGame.update(step, absent, rect);
+        this.elapsed += step;
+      }
     }
     const remaining = targetElapsed - this.elapsed;
-    if (remaining > 0) this.miniGame.update(remaining, modelReady ? players : absent, rect);
+    if (remaining > 0)
+      this.miniGame.update(remaining, modelReady && elapsed < duration ? players : absent, rect);
     this.elapsed = targetElapsed;
     if (elapsed >= duration) {
       this.lastScores = this.getLiveScores();

@@ -34,11 +34,14 @@ export function GameHost({
     const controller = new GameController({ root, video, canvas }, games, onFinal, onScore);
     controllerRef.current = controller;
     const resize = () => controller.resize();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(resize);
+    observer?.observe(canvas);
     const stop = () => controller.stop();
     window.addEventListener('resize', resize);
     window.addEventListener('orientationchange', resize);
     window.addEventListener('beforeunload', stop);
     return () => {
+      observer?.disconnect();
       window.removeEventListener('resize', resize);
       window.removeEventListener('orientationchange', resize);
       window.removeEventListener('beforeunload', stop);

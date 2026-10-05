@@ -168,6 +168,10 @@ export class FaceMimic implements MiniGame {
     );
     context.restore();
   }
+  resize(width: number, height: number): void {
+    this.width = width;
+    this.height = height;
+  }
   getScores(): [number, number] {
     const result: [number, number] = [...this.scores];
     if (this.elapsed >= 24) {

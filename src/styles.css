@@ -2131,3 +2131,227 @@ strong,
     gap: 6px;
   }
 }
+/* Online landscape arena: local play is always left, regardless of player slot. */
+.online-arena {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  height: 100dvh;
+  overflow: hidden;
+  background: #15152c;
+  color: white;
+}
+.online-local-pane,
+.online-remote-pane {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+.online-local-pane {
+  border-right: 2px solid #ffffff80;
+}
+.online-local-pane > .game {
+  position: absolute;
+  inset: 0;
+}
+.online-remote-pane .remote-peer-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  aspect-ratio: auto;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  z-index: 0;
+}
+.online-remote-pane video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.online-arena-hud {
+  position: absolute;
+  z-index: 30;
+  inset: env(safe-area-inset-top, 0px) 0 auto;
+  display: grid;
+  grid-template-columns: 1fr minmax(90px, 18%) 1fr;
+  gap: 8px;
+  padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
+  background: linear-gradient(#101020e8, #10102080, transparent);
+  pointer-events: none;
+}
+.arena-score,
+.arena-clock {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+.arena-score span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 800;
+}
+.arena-score strong {
+  font-size: clamp(24px, 4vh, 36px);
+  color: #75dbb5;
+}
+.arena-score.remote {
+  justify-content: flex-end;
+}
+.arena-score.remote strong {
+  color: #ffbdcf;
+}
+.arena-clock {
+  flex-direction: column;
+  gap: 0;
+  text-align: center;
+}
+.arena-clock span {
+  font-size: 10px;
+  font-weight: 800;
+}
+.arena-clock strong {
+  font-size: 19px;
+  color: #ffda48;
+}
+.online-arena-actions {
+  position: absolute;
+  z-index: 35;
+  inset: auto 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px max(12px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
+  background: linear-gradient(transparent, #101020cc);
+}
+.online-arena-actions button {
+  padding: 7px 12px;
+  border: 1px solid #ffffff66;
+  border-radius: 10px;
+  background: #15152ccc;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  min-height: 36px;
+}
+.online-arena-actions span {
+  font-size: 10px;
+  text-align: center;
+}
+.online-arena .play-hud,
+.online-arena .countdown-screen,
+.online-arena .keep-going,
+.online-arena .tracking-pill,
+.online-arena .result-screen {
+  display: none !important;
+}
+.online-arena .model-message {
+  width: min(90%, 300px);
+  padding: 12px;
+  font-size: 12px;
+}
+.online-game-active > .online-countdown {
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  width: min(270px, 50vw);
+  padding: 16px;
+  gap: 8px;
+  border-radius: 24px;
+  background: #fff9e6ed;
+  border: 2px solid #1b1640;
+}
+.online-game-active > .online-countdown > strong {
+  font-size: clamp(48px, 16vh, 110px);
+  -webkit-text-stroke: 2px #1b1640;
+  filter: none;
+}
+.online-game-active > .online-countdown > span {
+  font-size: 10px;
+}
+.online-game-active > .online-countdown > small {
+  font-size: 16px;
+}
+.online-orientation-gate {
+  display: none;
+}
+.lobby-page:fullscreen {
+  overflow: auto;
+  background: var(--zg-bg);
+}
+@media (orientation: portrait) {
+  .online-orientation-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+    padding: max(24px, env(safe-area-inset-top)) 28px max(24px, env(safe-area-inset-bottom));
+    text-align: center;
+    background: var(--zg-bg);
+    color: var(--zg-ink);
+  }
+  .online-orientation-gate h1 {
+    font-size: clamp(26px, 8vw, 42px);
+    margin: 0;
+  }
+  .online-orientation-gate p {
+    max-width: 320px;
+    margin: 0;
+  }
+  .online-orientation-gate small {
+    max-width: 280px;
+    opacity: 0.7;
+  }
+  .rotate-phone {
+    font-size: 80px;
+    line-height: 1;
+    color: #8564ca;
+  }
+  .lobby-page > :not(.online-orientation-gate) {
+    visibility: hidden;
+  }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .online-arena-hud {
+    padding-top: 4px;
+  }
+  .arena-score span {
+    font-size: 10px;
+    max-width: 65%;
+  }
+  .arena-score strong {
+    font-size: 25px;
+  }
+  .arena-clock strong {
+    font-size: 16px;
+  }
+  .online-arena-actions button {
+    padding: 4px 10px;
+  }
+  .session-finished {
+    padding: 12px;
+    gap: 6px;
+    overflow: auto;
+  }
+  .session-finished > .zg-mascot {
+    max-height: 65px;
+    width: 65px;
+  }
+  .session-finished h2 {
+    font-size: 26px;
+  }
+}

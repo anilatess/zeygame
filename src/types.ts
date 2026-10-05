@@ -56,6 +56,7 @@ export type MiniGame = {
   calibrationLandmarks?: readonly number[];
   calibrationInstruction?: string;
   start(width: number, height: number, context?: GameStartContext): void;
+  resize?(width: number, height: number): void;
   update(deltaTime: number, players: PlayersTracking, rect: VideoRect): void;
   draw(context: CanvasRenderingContext2D): void;
   getScores(): [number, number];

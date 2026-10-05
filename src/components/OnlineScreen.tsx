@@ -19,6 +19,13 @@ import { createPeerMediaStream } from '../online/webrtc-config';
 import type { RoomPlayer } from '../online/room-types';
 import type { MiniGame } from '../types';
 import { GameHost } from './GameHost';
+import {
+  OnlineArena,
+  OnlineOrientationGate,
+  RemotePeerVideo,
+  requestOnlineFullscreen,
+  usePortrait,
+} from './OnlineArena';
 import { ZeyHeader } from './ZeyHeader';
 import { GameIllustration, Mascot } from './ZeyVisuals';
 
@@ -31,6 +38,7 @@ export function OnlineScreen({
 }) {
   const onlineGames = useMemo(() => [...games], [games]);
   const online = useOnlineRoom();
+  const portrait = usePortrait();
   const [tab, setTab] = useState<'create' | 'join'>('create');
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
@@ -49,128 +57,132 @@ export function OnlineScreen({
         setNotice={setNotice}
         games={onlineGames}
         onBack={() => void leaveAndBack()}
+        portrait={portrait}
       />
     );
   }
 
   const pending = online.busy !== null;
   return (
-    <main className="zg-page online-page">
-      <ZeyHeader onHome={onBack} />
-      <div className="online-layout">
-        <section className="online-intro">
-          <span className="zg-sticker yellow">CANLI BAĞLANTI</span>
-          <h1>
-            Uzaktan ol.
-            <br />
-            <em>Oyunda kal.</em>
-          </h1>
-          <p>Arkadaşın nerede olursa olsun, aynı arenada buluşun.</p>
-          <div className="player-link" aria-hidden="true">
-            <div className="player-chip purple">
-              <Mascot />
-              <strong>SEN</strong>
-            </div>
-            <span>
-              <b>VİYUV!</b>
-            </span>
-            <div className="player-chip blue">
-              <Mascot mood="winner" />
-              <strong>ARKADAŞIN</strong>
-            </div>
-          </div>
-        </section>
-        <section className="online-panel" aria-labelledby="online-panel-title">
-          <div className="online-tabs" role="tablist">
-            <button
-              role="tab"
-              aria-selected={tab === 'create'}
-              onClick={() => {
-                setTab('create');
-                online.clearError();
-              }}
-            >
-              Oda Oluştur
-            </button>
-            <button
-              role="tab"
-              aria-selected={tab === 'join'}
-              onClick={() => {
-                setTab('join');
-                online.clearError();
-              }}
-            >
-              Odaya Katıl
-            </button>
-          </div>
-          <div className="online-content">
-            <div className="online-icon online-entry-mascot">
-              <Mascot />
-            </div>
-            <h2 id="online-panel-title">
-              {tab === 'create' ? 'Kendi odanı kur' : 'Arkadaşına katıl'}
-            </h2>
-            <p>
-              {tab === 'create'
-                ? 'Sana özel oda kodunu arkadaşınla paylaş. O katılınca oyun başlasın.'
-                : '6 haneli oda kodunu gir ve arenadaki yerini al.'}
-            </p>
-            <label htmlFor="display-name">ADIN NE?</label>
-            <input
-              id="display-name"
-              className="name-input"
-              value={name}
-              onChange={(event) => setName(event.target.value.slice(0, 20))}
-              autoComplete="nickname"
-              maxLength={20}
-              placeholder="Adını yaz"
-              disabled={pending}
-            />
-            {tab === 'join' && (
-              <>
-                <label htmlFor="room-code">ODA KODU</label>
-                <input
-                  id="room-code"
-                  value={code}
-                  onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  placeholder="583921"
-                  maxLength={6}
-                  disabled={pending}
-                />
-              </>
-            )}
-            {tab === 'create' && (
-              <div className="benefits">
-                <span>✓ Özel, güvenli oda</span>
-                <span>✓ Anında bağlantı</span>
+    <>
+      <OnlineOrientationGate onBack={onBack} />
+      <main className="zg-page online-page" inert={portrait}>
+        <ZeyHeader onHome={onBack} />
+        <div className="online-layout">
+          <section className="online-intro">
+            <span className="zg-sticker yellow">CANLI BAĞLANTI</span>
+            <h1>
+              Uzaktan ol.
+              <br />
+              <em>Oyunda kal.</em>
+            </h1>
+            <p>Arkadaşın nerede olursa olsun, aynı arenada buluşun.</p>
+            <div className="player-link" aria-hidden="true">
+              <div className="player-chip purple">
+                <Mascot />
+                <strong>SEN</strong>
               </div>
-            )}
-            <button
-              className="zg-button primary"
-              disabled={pending || !online.configured}
-              onClick={() =>
-                void (tab === 'create' ? online.create(name) : online.join(code, name))
-              }
-            >
-              {online.busy === 'recovering'
-                ? 'HAZIRLANIYOR...'
-                : online.busy === 'creating'
-                  ? 'ODA OLUŞTURULUYOR...'
-                  : online.busy === 'joining'
-                    ? 'KATILINIYOR...'
-                    : tab === 'create'
-                      ? 'ODA OLUŞTUR →'
-                      : 'ODAYA KATIL →'}
-            </button>
-            <p className="online-message" role="alert" aria-live="polite">
-              {online.error}
-            </p>
-          </div>
-        </section>
-      </div>
-    </main>
+              <span>
+                <b>VİYUV!</b>
+              </span>
+              <div className="player-chip blue">
+                <Mascot mood="winner" />
+                <strong>ARKADAŞIN</strong>
+              </div>
+            </div>
+          </section>
+          <section className="online-panel" aria-labelledby="online-panel-title">
+            <div className="online-tabs" role="tablist">
+              <button
+                role="tab"
+                aria-selected={tab === 'create'}
+                onClick={() => {
+                  setTab('create');
+                  online.clearError();
+                }}
+              >
+                Oda Oluştur
+              </button>
+              <button
+                role="tab"
+                aria-selected={tab === 'join'}
+                onClick={() => {
+                  setTab('join');
+                  online.clearError();
+                }}
+              >
+                Odaya Katıl
+              </button>
+            </div>
+            <div className="online-content">
+              <div className="online-icon online-entry-mascot">
+                <Mascot />
+              </div>
+              <h2 id="online-panel-title">
+                {tab === 'create' ? 'Kendi odanı kur' : 'Arkadaşına katıl'}
+              </h2>
+              <p>
+                {tab === 'create'
+                  ? 'Sana özel oda kodunu arkadaşınla paylaş. O katılınca oyun başlasın.'
+                  : '6 haneli oda kodunu gir ve arenadaki yerini al.'}
+              </p>
+              <label htmlFor="display-name">ADIN NE?</label>
+              <input
+                id="display-name"
+                className="name-input"
+                value={name}
+                onChange={(event) => setName(event.target.value.slice(0, 20))}
+                autoComplete="nickname"
+                maxLength={20}
+                placeholder="Adını yaz"
+                disabled={pending}
+              />
+              {tab === 'join' && (
+                <>
+                  <label htmlFor="room-code">ODA KODU</label>
+                  <input
+                    id="room-code"
+                    value={code}
+                    onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="583921"
+                    maxLength={6}
+                    disabled={pending}
+                  />
+                </>
+              )}
+              {tab === 'create' && (
+                <div className="benefits">
+                  <span>✓ Özel, güvenli oda</span>
+                  <span>✓ Anında bağlantı</span>
+                </div>
+              )}
+              <button
+                className="zg-button primary"
+                disabled={pending || !online.configured}
+                onClick={() =>
+                  void (tab === 'create' ? online.create(name) : online.join(code, name))
+                }
+              >
+                {online.busy === 'recovering'
+                  ? 'HAZIRLANIYOR...'
+                  : online.busy === 'creating'
+                    ? 'ODA OLUŞTURULUYOR...'
+                    : online.busy === 'joining'
+                      ? 'KATILINIYOR...'
+                      : tab === 'create'
+                        ? 'ODA OLUŞTUR →'
+                        : 'ODAYA KATIL →'}
+              </button>
+              <p className="online-message" role="alert" aria-live="polite">
+                {online.error}
+              </p>
+            </div>
+          </section>
+        </div>
+      </main>
+    </>
   );
 }
 
@@ -182,12 +194,14 @@ function LobbyScreen({
   setNotice,
   onBack,
   games,
+  portrait,
 }: {
   online: OnlineState;
   notice: string;
   setNotice: (message: string) => void;
   onBack: () => void;
   games: MiniGame[];
+  portrait: boolean;
 }) {
   const { snapshot } = online;
   if (!snapshot) return null;
@@ -200,6 +214,10 @@ function LobbyScreen({
   const scoreOne = currentScores.find((score) => score.playerSlot === 1)?.score ?? 0;
   const scoreTwo = currentScores.find((score) => score.playerSlot === 2)?.score ?? 0;
   const controllerRef = useRef<GameController | null>(null);
+  const pageRef = useRef<HTMLElement>(null);
+  const [liveLocalScore, setLiveLocalScore] = useState(0);
+  const [liveRemoteScore, setLiveRemoteScore] = useState(0);
+  const [serverNow, setServerNow] = useState(() => Date.now() + online.clockOffsetMs);
   const [cameraMode, setCameraMode] = useState<CameraPreparationMode>('none');
   const [cameraBusy, setCameraBusy] = useState(false);
   const [countdownMeasurement, setCountdownMeasurement] = useState<CountdownMeasurement | null>(
@@ -221,6 +239,20 @@ function LobbyScreen({
   const finishedRoundRef = useRef<string | null>(null);
   const activeSession =
     snapshot.room.sessionState === 'countdown' || snapshot.room.sessionState === 'playing';
+  useEffect(() => {
+    if (!activeSession) return;
+    const tick = () => setServerNow(Date.now() + online.clockOffsetMs);
+    tick();
+    const timer = window.setInterval(tick, 200);
+    return () => window.clearInterval(timer);
+  }, [activeSession, online.clockOffsetMs]);
+  useEffect(() => {
+    const element = pageRef.current;
+    return () => {
+      if (element && document.fullscreenElement === element)
+        void document.exitFullscreen().catch(() => undefined);
+    };
+  }, []);
   const canStart =
     host &&
     snapshot.room.status === 'waiting' &&
@@ -236,6 +268,7 @@ function LobbyScreen({
         : 0;
   const peer = useRoomPeer({
     enabled: cameraMode === 'camera',
+    signalingConnected: online.connected,
     localStream: peerLocalStream,
     localPlayerSlot: self?.playerSlot,
     currentUserId: snapshot.currentUserId,
@@ -254,6 +287,7 @@ function LobbyScreen({
     publishScore: online.publishScore,
   };
   const handleScore = useCallback((score: number, final: boolean) => {
+    setLiveLocalScore(score);
     const context = scoreContextRef.current;
     if (!context.roundId || !context.playerSlot) return;
     scoreSequenceRef.current += 1;
@@ -375,8 +409,9 @@ function LobbyScreen({
         if (event.sequence <= remoteScoreSequencesRef.current[index]) return;
         remoteScoreSequencesRef.current[index] = event.sequence;
         controllerRef.current?.setOnlineRemoteScore(event.playerSlot, event.score);
+        if (event.playerSlot !== self?.playerSlot) setLiveRemoteScore(event.score);
       }),
-    [online.subscribeEvent, snapshot.room.roundId],
+    [online.subscribeEvent, snapshot.room.roundId, self?.playerSlot],
   );
 
   useEffect(() => {
@@ -384,6 +419,8 @@ function LobbyScreen({
     scoreRoundRef.current = snapshot.room.roundId;
     scoreSequenceRef.current = 0;
     remoteScoreSequencesRef.current = [0, 0];
+    setLiveLocalScore(0);
+    setLiveRemoteScore(0);
   }, [snapshot.room.roundId]);
 
   useEffect(() => {
@@ -394,11 +431,13 @@ function LobbyScreen({
     for (const score of snapshot.scores) {
       if (score.roundId === snapshot.room.roundId) {
         const index = score.playerSlot - 1;
+        if (score.sequence < remoteScoreSequencesRef.current[index]) continue;
         remoteScoreSequencesRef.current[index] = Math.max(
           remoteScoreSequencesRef.current[index],
           score.sequence,
         );
         controllerRef.current?.setOnlineRemoteScore(score.playerSlot, score.score);
+        if (score.playerSlot !== self?.playerSlot) setLiveRemoteScore(score.score);
       }
     }
   }, [self?.playerSlot, snapshot.room.roundId, snapshot.scores]);
@@ -453,7 +492,8 @@ function LobbyScreen({
   );
 
   const prepareCamera = async () => {
-    if (!snapshot.room.selectedGameId || !self) return;
+    if (!snapshot.room.selectedGameId || !self || portrait) return;
+    void requestOnlineFullscreen(pageRef.current);
     setCameraBusy(true);
     setNotice('');
     try {
@@ -517,16 +557,42 @@ function LobbyScreen({
   };
 
   return (
-    <main className={`zg-page lobby-page ${activeSession ? 'online-game-active' : ''}`}>
-      <GameHost
-        controllerRef={controllerRef}
-        games={games}
-        visible={activeSession && cameraMode === 'camera'}
-        onHome={onBack}
-        onChooseAnother={() => undefined}
-        onScore={handleScore}
-      />
-      {cameraMode === 'camera' && <RemotePeerVideo stream={peer.remoteStream} state={peer.state} />}
+    <main
+      ref={pageRef}
+      className={`zg-page lobby-page ${activeSession ? 'online-game-active' : ''}`}
+    >
+      <OnlineOrientationGate onBack={onBack} />
+      <OnlineArena
+        active={activeSession && cameraMode === 'camera'}
+        localName={self?.displayName ?? 'Sen'}
+        remoteName={
+          snapshot.players.find((player) => player.playerSlot !== self?.playerSlot)?.displayName ??
+          'Arkadaşın'
+        }
+        localScore={liveLocalScore}
+        remoteScore={liveRemoteScore}
+        gameName={selectedGame?.name ?? 'ZeyGame'}
+        remaining={Math.max(
+          0,
+          Math.ceil(
+            (selectedGame?.duration ?? 20) -
+              Math.max(0, (serverNow - Date.parse(snapshot.room.startAt ?? '')) / 1000),
+          ),
+        )}
+        pending={online.scorePending}
+        onBack={onBack}
+        onFullscreen={() => void requestOnlineFullscreen(pageRef.current)}
+        remote={<RemotePeerVideo stream={peer.remoteStream} state={peer.state} />}
+      >
+        <GameHost
+          controllerRef={controllerRef}
+          games={games}
+          visible={activeSession && cameraMode === 'camera'}
+          onHome={onBack}
+          onChooseAnother={() => undefined}
+          onScore={handleScore}
+        />
+      </OnlineArena>
       {activeSession && cameraMode === 'none' && (
         <section className="session-recovery">
           <Mascot mood="hello" />
@@ -741,40 +807,6 @@ function LobbyScreen({
         </>
       )}
     </main>
-  );
-}
-
-function RemotePeerVideo({ stream, state }: { stream: MediaStream | null; state: string }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [playBlocked, setPlayBlocked] = useState(false);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.srcObject = stream;
-    setPlayBlocked(false);
-    if (stream) void video.play().catch(() => setPlayBlocked(true));
-    return () => {
-      video.srcObject = null;
-    };
-  }, [stream]);
-
-  return (
-    <aside className={`remote-peer-video ${stream ? 'has-stream' : ''}`}>
-      <span>ARKADAŞIN · {state === 'connected' ? 'CANLI' : 'BAĞLANIYOR'}</span>
-      <video ref={videoRef} autoPlay playsInline />
-      {!stream && <small>Görüntü bağlantısı bekleniyor…</small>}
-      {playBlocked && (
-        <button
-          onClick={() => {
-            void videoRef.current?.play();
-            setPlayBlocked(false);
-          }}
-        >
-          SESİ AÇ
-        </button>
-      )}
-    </aside>
   );
 }
 

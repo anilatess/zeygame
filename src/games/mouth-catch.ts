@@ -127,6 +127,26 @@ export class MouthCatch implements MiniGame {
     context.globalAlpha = 1;
     context.restore();
   }
+  resize(width: number, height: number): void {
+    if (!this.width || !this.height) return;
+    const sx = width / this.width,
+      sy = height / this.height;
+    for (const food of this.foods) {
+      food.x *= sx;
+      food.y *= sy;
+      food.speed *= sy;
+      food.size *= Math.min(sx, sy);
+    }
+    for (const particle of this.particles) {
+      particle.x *= sx;
+      particle.y *= sy;
+      particle.vx *= sx;
+      particle.vy *= sy;
+    }
+    this.width = width;
+    this.height = height;
+  }
+
   getScores(): [number, number] {
     return [...this.scores];
   }

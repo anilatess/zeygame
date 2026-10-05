@@ -6,6 +6,7 @@ type PeerState = 'disabled' | 'connecting' | 'connected' | 'disconnected' | 'fai
 
 export function useRoomPeer({
   enabled,
+  signalingConnected,
   localStream,
   localPlayerSlot,
   currentUserId,
@@ -13,6 +14,7 @@ export function useRoomPeer({
   subscribeEvent,
 }: {
   enabled: boolean;
+  signalingConnected: boolean;
   localStream: MediaStream | null;
   localPlayerSlot?: 1 | 2;
   currentUserId: string;
@@ -23,7 +25,13 @@ export function useRoomPeer({
   const [state, setState] = useState<PeerState>('disabled');
 
   useEffect(() => {
-    if (!enabled || !localStream || !localPlayerSlot || typeof RTCPeerConnection === 'undefined') {
+    if (
+      !enabled ||
+      !signalingConnected ||
+      !localStream ||
+      !localPlayerSlot ||
+      typeof RTCPeerConnection === 'undefined'
+    ) {
       setRemoteStream(null);
       setState('disabled');
       return;
@@ -32,10 +40,22 @@ export function useRoomPeer({
     let peer: RTCPeerConnection | null = null;
     let disposed = false;
     let offerStarted = false;
-    let readyAcknowledged = false;
+    let lastOfferAt = 0;
     const pendingCandidates: RTCIceCandidateInit[] = [];
     const remoteSlot: 1 | 2 = localPlayerSlot === 1 ? 2 : 1;
-    const send = (event: OnlineEvent) => void sendEvent(event).catch(() => setState('failed'));
+    const send = (event: OnlineEvent) => {
+      if (!disposed)
+        void sendEvent(event).catch(() => {
+          if (!disposed) setState('failed');
+        });
+    };
+    const announce = (reply = false) =>
+      send({
+        kind: 'media-ready',
+        senderUserId: currentUserId,
+        playerSlot: localPlayerSlot,
+        reply,
+      });
 
     const signal = (payload: Omit<OnlineSignalEvent, 'kind' | 'senderUserId' | 'playerSlot'>) =>
       send({
@@ -81,6 +101,7 @@ export function useRoomPeer({
     const startOffer = async () => {
       if (localPlayerSlot !== 1 || offerStarted || disposed) return;
       offerStarted = true;
+      lastOfferAt = Date.now();
       const connection = ensurePeer();
       const offer = await connection.createOffer();
       await connection.setLocalDescription(offer);
@@ -88,10 +109,15 @@ export function useRoomPeer({
     };
 
     const restartConnection = () => {
-      if (!peer || disposed) return;
-      peer.restartIce();
-      offerStarted = false;
-      void startOffer().catch(() => setState('failed'));
+      if (disposed) return;
+      announce();
+      if (peer && localPlayerSlot === 1) {
+        peer.restartIce();
+        offerStarted = false;
+        void startOffer().catch(() => {
+          if (!disposed) setState('failed');
+        });
+      }
     };
 
     const handleSignal = async (event: OnlineSignalEvent) => {
@@ -113,9 +139,15 @@ export function useRoomPeer({
     const unsubscribe = subscribeEvent((event) => {
       if (event.playerSlot === localPlayerSlot) return;
       if (event.kind === 'media-ready') {
-        if (!readyAcknowledged) {
-          readyAcknowledged = true;
-          send({ kind: 'media-ready', senderUserId: currentUserId, playerSlot: localPlayerSlot });
+        if (!event.reply) announce(true);
+        // A guest returning after a reload has a new RTCPeerConnection.
+        if (
+          !event.reply &&
+          peer &&
+          ['connected', 'failed', 'disconnected'].includes(peer.connectionState)
+        ) {
+          peer.restartIce();
+          offerStarted = false;
         }
         void startOffer().catch(() => setState('failed'));
       } else if (event.kind === 'webrtc-signal' && event.targetSlot === localPlayerSlot) {
@@ -123,17 +155,37 @@ export function useRoomPeer({
       }
     });
 
-    send({ kind: 'media-ready', senderUserId: currentUserId, playerSlot: localPlayerSlot });
+    announce();
+    const retryTimer = window.setInterval(() => {
+      if (disposed || peer?.connectionState === 'connected') return;
+      announce();
+      if (peer && localPlayerSlot === 1 && Date.now() - lastOfferAt >= 6000) {
+        peer.restartIce();
+        offerStarted = false;
+        void startOffer().catch(() => {
+          if (!disposed) setState('failed');
+        });
+      }
+    }, 3000);
     window.addEventListener('online', restartConnection);
     return () => {
       disposed = true;
+      window.clearInterval(retryTimer);
       unsubscribe();
       window.removeEventListener('online', restartConnection);
       peer?.close();
       setRemoteStream(null);
       setState('disabled');
     };
-  }, [currentUserId, enabled, localPlayerSlot, localStream, sendEvent, subscribeEvent]);
+  }, [
+    currentUserId,
+    enabled,
+    signalingConnected,
+    localPlayerSlot,
+    localStream,
+    sendEvent,
+    subscribeEvent,
+  ]);
 
   return { remoteStream, state };
 }

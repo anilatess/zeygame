@@ -176,7 +176,15 @@ export class GameController {
   }
 
   resize(): void {
-    if (this.prepared) this.camera.resize();
+    if (this.prepared) {
+      // Keep the last landscape geometry while the rotation screen covers play.
+      if (this.manager.isOnline() && window.innerHeight > window.innerWidth) return;
+      this.camera.resize();
+      if (this.elements.canvas.width && this.elements.canvas.height)
+        this.manager
+          .getCurrentGame()
+          .resize?.(this.elements.canvas.width, this.elements.canvas.height);
+    }
   }
 
   getMediaStream(): MediaStream | null {
@@ -241,6 +249,11 @@ export class GameController {
     if (this.manager.isSoloTest()) players = toSoloPlayers(players);
     if (this.manager.isOnline())
       players = toSinglePlayer(players, this.manager.getLocalPlayerSlot());
+    if (
+      this.manager.isOnline() &&
+      (window.innerHeight > window.innerWidth || document.visibilityState === 'hidden')
+    )
+      players = this.emptyPlayers();
     if (!this.manager.isSoloTest() && !this.manager.isOnline())
       this.playerTracker.drawRegions(this.elements.canvas);
 

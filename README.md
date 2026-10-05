@@ -2,11 +2,11 @@
 
 ## Proje açıklaması
 
-ZeyGame, kamera ve MediaPipe ile kontrol edilen iki kişilik, 8 mini oyunlu parti oyunudur. Kamera ve algılama verileri tarayıcı içinde işlenir.
+ZeyGame, kamera ve MediaPipe ile kontrol edilen 8 mini oyunlu parti oyunudur. Aynı cihazda iki kişi, tek kişilik test ve iki cihaz arasında online karşılaşma modları vardır. Hareket algılama tarayıcıda yapılır; online modda kamera ve isteğe bağlı mikrofon WebRTC ile rakibe iletilir.
 
 ## Kullanılan teknolojiler
 
-Vite, TypeScript, Canvas 2D, Web Audio API, MediaPipe Tasks Vision, kamera API’leri ve temel PWA Service Worker.
+React, Vite, TypeScript, Canvas 2D, Web Audio API, MediaPipe Tasks Vision, Supabase Auth/Realtime/Postgres, WebRTC ve PWA Service Worker.
 
 ## Yerel çalıştırma
 
@@ -45,7 +45,7 @@ Kamera erişimi yalnızca **Partiyi Başlat** veya **Bu Oyunu Oyna** düğmesine
 
 ## Parti ve tek oyun modları
 
-**Partiyi Başlat**, ortak oyun listesindeki sekiz oyunu sırayla oynatır ve finalde toplam puanları gösterir. **Oyun Seç**, aynı listedeki sekiz karttan birini **Bu Oyunu Oyna** ile iki kişilik tek oyun oturumu olarak başlatır. Süreler ve puanlama her iki modda aynıdır; tek oyunculu mod yoktur.
+**Aynı Ekranda Oyna**, ortak oyun listesindeki sekiz oyunu sırayla oynatır ve finalde toplam puanları gösterir. **Bir oyun seç**, aynı listedeki sekiz karttan birini iki kişilik tek oyun oturumu olarak başlatır. **Tek Kişilik Test**, tek kişiyi izler ve algılama/FPS bilgilerini gösterir. **Online Oyna**, farklı cihazlardan iki oyuncuyu oda koduyla birleştirir.
 
 Tek oyun sonucunda yalnızca seçilen oyunun adı, iki skor ve kazanan/beraberlik gösterilir. **Aynı Oyunu Tekrar Oyna**, aynı oyun için hazırlığı ve skorları yeniden başlatır. **Başka Oyun Seç** ve **Ana Menüye Dön**, kamera, algılama modelleri, render döngüsü ve ses kaynaklarını kapatır. Sonradan parti başlatmak sekiz oyun sırasını geri getirir. Oturum modu ve sırası tek GameManager içinde tutulur.
 
@@ -124,3 +124,37 @@ Aktivasyon yalnızca ZeyGame'e ait tamamlanma işareti olmayan eski/yarım cache
 - [ ] Model isteğini engelleyerek hata oluştur; kamera görüntüsünü, duran süreyi ve **Tekrar Dene** düğmesini kontrol et. Bağlantıyı geri getirip tek yeniden denemeyle devam et; hata sırasında menüye dönüp tekrar başlatmayı da dene.
 - [ ] Laptop Chrome ve iPhone Safari'de başlatma/tekrar oynama tıklamasından sonra geri sayım ve oyun seslerini dinle; menüye dönüşte sesin kesildiğini kontrol et.
 - [ ] Yayın sonrasında A açıkken B'yi sun; aktif oyunun kendiliğinden yenilenmediğini, bildirimi, **Yenile** ile geçişi ve JS/CSS yanıtlarını kontrol et. Başarılı çevrimiçi açılıştan sonra bağlantıyı kesip yalnızca kabuğun açılmasını doğrula.
+
+## Online kurulum ve yatay oyun
+
+1. Supabase projesinde anonim girişleri (Anonymous Sign-ins) etkinleştirin.
+2. `supabase/migrations/` altındaki dört SQL migration dosyasını numara sırasıyla uygulayın. Bunlar oda üyeliği/RLS, özel Realtime kanalları ve tur skorlarını tanımlar. Bu güncelleme yeni migration gerektirmez.
+3. `.env.example` dosyasını `.env.local` olarak kopyalayın; `VITE_SUPABASE_URL` ve `VITE_SUPABASE_PUBLISHABLE_KEY` değerlerini girin. Tarayıcıya yalnız publishable/anon anahtarı verilir; service-role anahtarı kullanılmaz.
+4. GitHub Pages için aynı iki değeri repository **Actions variables** alanına ekleyin. Yerel dosyalar GitHub yayınına otomatik taşınmaz.
+5. Farklı ağlar arasında WebRTC bağlantısı için gerekirse `VITE_WEBRTC_ICE_SERVERS` JSON dizisini yapılandırın; bu değer artık yayın akışına da aktarılır. Varsayılan yalnız STUN kullanır, her ağda görüntü bağlantısını garanti etmez. Kalıcı özel TURN parolalarını istemciye gömmeyin; üretimde süreli TURN kimlik bilgisi hizmeti tercih edin.
+
+Online ekran yatay kullanılır. Dik konumda çevirme uyarısı oyun kontrollerini kapatır; hareketler puan üretmez. Başlamış tur durmaz: iki oyuncunun başlangıç ve bitişi sunucunun ortak zamanına bağlıdır. Arka plandan dönmek veya modelin gecikmesi ek süre sağlamaz; kaçırılan süre geçmişe ait hareket uydurulmadan ilerletilir.
+
+Yatay oyunda sol yarı her zaman yerel oyuncunun kamera/oyun alanı, sağ yarı rakibin kamera görüntüsüdür. P1/P2 kimliği değişmez, skor ve çarpışmalar doğru oyuncuya yazılır. Ekran boyutu değiştiğinde hedeflerin konumu ölçeklenir, skorlar sıfırlanmaz. Kamera hazırlanırken destekleyen tarayıcılarda tam ekran ve yatay yön kilidi denenir. Desteklemeyen tarayıcılarda (bazı iPhone/Safari sürümleri dahil) görünüm kullanılabilir tarayıcı alanını kaplar ve cihaz elle çevrilir.
+
+Son skor sunucu tarafından kabul edilene kadar yerel gönderim kuyruğunda tutulur. Bağlantı geri geldiğinde ve 1,5 saniyelik yeniden denemelerde tekrar gönderilir; kullanılabilir yerel depolama varsa sayfa yenilemesinden sonra da korunur. Kuyruk oda/oyuncu/tur kimliğine bağlıdır; eski tur yeni tura yazılmaz. Tur kapatma isteği de başarısızsa yeniden denenir. Bu mekanizma yalnız gönderilmeyi bekleyen skoru korur; sayfa yenilendiğinde tüm oyun sahnesini veya geçmiş hareketleri geri yüklemez.
+
+WebRTC, oda bağlantısı hazır olmadan sinyal göndermez. Kaybolan ilk hazır mesajı yeniden gönderilir; yanıt mesajları birbirini sonsuz kez tetiklemez. Rakip sayfayı yenilediğinde ve taşıma bağlantısı koptuğunda bağlantı yeniden kurulur/denenir. Başarısız bağlantıda görüntü alanı durum mesajı gösterir; oyun skoru kamera aktarımına bağlı değildir.
+
+## Tüm kontroller ve yayın koşulu
+
+```sh
+npm run validate
+```
+
+Bu komut TypeScript, biçim, üretim derlemesi ve tüm `verify-*.mjs` kontrollerini sırayla çalıştırır. `npm run verify` önceden üretilmiş `dist` gerektirir. GitHub Actions da derlemeden sonra aynı doğrulama grubunu çalıştırır; hata olursa Pages artifact'i yayınlanmaz. `.gitattributes` Windows ve Linux satır sonlarını tutarlı tutar.
+
+5 Ekim 2026 kontrolleri:
+- Sekiz oyunda ortak bitiş zamanı; altı saniyelik arka plan aralığı ve model gecikmesi.
+- Final skorunda başarısız gönderim, yeniden yükleme, bekleyen isteğin ardından daha yeni skor ve tur değişimi.
+- Normal karelerde milisaniye yuvarlamasının sahte takip kaybı üretmemesi.
+- P1/P2 için yeniden boyutlandırmada skorun korunması ve Buz Kırma parmak/hedef çarpışması.
+- Taklit RTC bağlantısıyla kayıp ilk mesaj, yanıt döngüsü, rakibin yeniden bağlanması, ICE yeniden denemesi ve kaynak temizliği.
+- Gerçek tarayıcıda üretim `OnlineArena` bileşeniyle 844×390 ve 640×360 yatay, 390×844 dik görünüm. Kamera/mikrofon yerine açıkça etiketli yapay görüntü kullanıldı.
+
+Görsel örnek, geliştirme sunucusunda `/zeygame/online-arena.test.html?slot=1` veya `?slot=2` adresindedir ve üretim paketine dahil edilmez. Bu kontroller iki gerçek cihazdaki WebRTC, mikrofon, CDN ve telefon tarayıcısının tam ekran davranışını doğrulamaz. Bu cihaz kontrolleri ayrıca yapılmalıdır.

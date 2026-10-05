@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "format": "prettier --write src scripts",
     "format:check": "prettier --check src scripts",
+    "verify": "node scripts/verify-all.mjs",
+    "validate": "npm run typecheck && npm run format:check && npm run build && npm run verify",
     "verify:online-phase2": "node scripts/verify-online-phase2.mjs",
     "verify:camera-preparation": "node scripts/verify-camera-preparation.mjs",
     "verify:online-phase3": "node scripts/verify-online-phase3.mjs",

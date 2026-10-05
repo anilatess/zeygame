@@ -22,6 +22,37 @@ function load(file) {
 const { GameManager } = load('../src/game-manager.ts');
 const { createGames } = load('../src/games.ts');
 const { ScoreOutbox } = load('../src/online/score-outbox.ts');
+// Date.now rounds to milliseconds while animation time is fractional.
+// A normal 17ms frame must never insert an artificial tracking-loss sample.
+{
+  let now = 0;
+  const observations = [];
+  const game = {
+    id: 'ice-breaker',
+    name: 'Clock test',
+    tracking: 'hands',
+    start() {},
+    update(_dt, players) {
+      observations.push(players[0].detected);
+    },
+    getScores() {
+      return [0, 0];
+    },
+  };
+  const manager = new GameManager([game]);
+  manager.startOnline(0, 1);
+  manager.enterOnlineCalibration(0, 0, () => now);
+  const present = [
+    { hands: [], pose: null, face: { detected: false, blend: {}, face: null }, detected: true },
+    { hands: [], pose: null, face: { detected: false, blend: {}, face: null }, detected: false },
+  ];
+  for (let i = 1; i <= 100; i++) {
+    now = i * 17;
+    manager.update(0.0166, present, 640, 480, {});
+  }
+  assert.equal(observations.length, 100);
+  assert.ok(observations.every(Boolean));
+}
 const empty = () => ({
   hands: [],
   pose: null,

@@ -12,6 +12,7 @@ export type OnlineMediaReadyEvent = {
   kind: 'media-ready';
   senderUserId: string;
   playerSlot: 1 | 2;
+  reply?: boolean;
 };
 
 export type OnlineSignalEvent = {

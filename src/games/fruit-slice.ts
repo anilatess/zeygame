@@ -127,6 +127,27 @@ export class FruitSlice implements MiniGame {
     }
     context.restore();
   }
+  resize(width: number, height: number): void {
+    if (!this.width || !this.height) return;
+    const sx = width / this.width,
+      sy = height / this.height;
+    for (const fruit of this.fruits) {
+      fruit.x *= sx;
+      fruit.y *= sy;
+      fruit.vx *= sx;
+      fruit.vy *= sy;
+      fruit.radius *= Math.min(sx, sy);
+    }
+    for (const particle of this.particles) {
+      particle.x *= sx;
+      particle.y *= sy;
+      particle.vx *= sx;
+      particle.vy *= sy;
+    }
+    this.width = width;
+    this.height = height;
+  }
+
   getScores(): [number, number] {
     return [...this.scores];
   }
