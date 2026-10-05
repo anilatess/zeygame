@@ -17,6 +17,7 @@ import { useOnlineRoom } from '../online/useOnlineRoom';
 import { useRoomPeer } from '../online/use-room-peer';
 import { createPeerMediaStream } from '../online/webrtc-config';
 import { createRoomInviteUrl, roomCodeFromInvite } from '../online/invite-link';
+import { calculateMatchScore } from '../online/match-score';
 import type { RoomPlayer } from '../online/room-types';
 import type { MiniGame } from '../types';
 import { GameHost } from './GameHost';
@@ -215,6 +216,8 @@ function LobbyScreen({
   const currentScores = snapshot.scores.filter((score) => score.roundId === snapshot.room.roundId);
   const scoreOne = currentScores.find((score) => score.playerSlot === 1)?.score ?? 0;
   const scoreTwo = currentScores.find((score) => score.playerSlot === 2)?.score ?? 0;
+  const match = useMemo(() => calculateMatchScore(snapshot.scores), [snapshot.scores]);
+  const nextRoundNumber = Math.min(3, match.rounds.length + 1);
   const controllerRef = useRef<GameController | null>(null);
   const pageRef = useRef<HTMLElement>(null);
   const [liveLocalScore, setLiveLocalScore] = useState(0);
@@ -661,8 +664,10 @@ function LobbyScreen({
       {snapshot.room.sessionState === 'finished' && (
         <section className="session-finished">
           <Mascot mood="winner" />
-          <span className="zg-sticker coral">ONLINE TUR</span>
-          <h2>Tur tamamlandı!</h2>
+          <span className="zg-sticker coral">
+            {match.complete ? 'MAÇ TAMAMLANDI' : `${match.rounds.length}. RAUND`}
+          </span>
+          <h2>{match.complete ? 'Maçın galibi belli oldu!' : 'Rövanş zamanı!'}</h2>
           <div className="online-final-score" aria-label="Online tur sonucu">
             <span>
               {playerOne?.displayName ?? 'Oyuncu 1'} · {scoreOne}
@@ -678,12 +683,36 @@ function LobbyScreen({
               {playerTwo?.displayName ?? 'Oyuncu 2'} · {scoreTwo}
             </span>
           </div>
-          {host ? (
+          <div className="online-match-score" aria-label="Üç raundluk maç durumu">
+            <span>{playerOne?.displayName ?? 'Oyuncu 1'}</span>
+            <strong>
+              {match.winsOne} – {match.winsTwo}
+            </strong>
+            <span>{playerTwo?.displayName ?? 'Oyuncu 2'}</span>
+            <small>
+              {match.rounds.length}/3 raund tamamlandı
+              {match.draws ? ` · ${match.draws} beraberlik` : ''}
+            </small>
+          </div>
+          {match.complete ? (
+            <p className="match-winner">
+              {match.winsOne === match.winsTwo
+                ? 'MAÇ BERABERE!'
+                : match.winsOne > match.winsTwo
+                  ? `${playerOne?.displayName ?? 'Oyuncu 1'} MAÇI KAZANDI!`
+                  : `${playerTwo?.displayName ?? 'Oyuncu 2'} MAÇI KAZANDI!`}
+            </p>
+          ) : host ? (
             <button className="zg-button primary" onClick={() => void online.resetSession()}>
-              LOBİYE DÖN
+              {nextRoundNumber}. RAUND İÇİN RÖVANŞ
             </button>
           ) : (
-            <p>Ev sahibi yeni tur için lobiyi hazırlıyor.</p>
+            <p>Ev sahibi rövanşı hazırlıyor.</p>
+          )}
+          {match.complete && (
+            <button className="zg-button" onClick={onBack}>
+              ODADAN AYRIL
+            </button>
           )}
         </section>
       )}
@@ -691,9 +720,15 @@ function LobbyScreen({
         <>
           <ZeyHeader onHome={onBack} />
           <section className="lobby-heading">
-            <span className="zg-sticker yellow">CANLI LOBBY</span>
-            <h1>ODA HAZIR!</h1>
-            <p>Arkadaşına bu kodu gönder, sonra birlikte hazır olun.</p>
+            <span className="zg-sticker yellow">
+              {match.rounds.length ? `3 RAUNDLUK MAÇ · ${nextRoundNumber}. RAUND` : 'CANLI LOBBY'}
+            </span>
+            <h1>{match.rounds.length ? 'RÖVANŞA HAZIRLAN!' : 'ODA HAZIR!'}</h1>
+            <p>
+              {match.rounds.length
+                ? `Maç durumu ${match.winsOne}–${match.winsTwo}. Kameranı hazırla ve yeniden hazır ol.`
+                : 'Arkadaşına bu kodu gönder, sonra birlikte hazır olun.'}
+            </p>
           </section>
           <section className="room-code-card">
             <span>ODA KODU</span>
