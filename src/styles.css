@@ -2175,6 +2175,10 @@ strong,
   height: 100%;
   object-fit: cover;
 }
+.online-remote-pane .remote-peer-video button {
+  bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+  max-width: calc(100% - 16px);
+}
 .online-arena-hud {
   position: absolute;
   z-index: 30;
