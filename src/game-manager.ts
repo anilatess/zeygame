@@ -16,6 +16,8 @@ export class GameManager {
   private lastScores: [number, number] = [0, 0];
   private totals: [number, number] = [0, 0];
   private onlineStartDelay = 0;
+  private onlineStartAt: number | null = null;
+  private onlineNow: () => number = Date.now;
   private onlineRoundSeed: number | undefined;
   private remoteScores: [number | null, number | null] = [null, null];
   private activeSession: Session;
@@ -130,13 +132,20 @@ export class GameManager {
     this.lastScores = [0, 0];
     this.totals = [0, 0];
     this.onlineStartDelay = 0;
+    this.onlineStartAt = null;
     this.remoteScores = [null, null];
   }
   enterCalibration(): void {
     this.state = 'CALIBRATION';
   }
-  enterOnlineCalibration(startDelaySeconds: number): void {
+  enterOnlineCalibration(
+    startDelaySeconds: number,
+    startAt?: number,
+    now: () => number = Date.now,
+  ): void {
     this.onlineStartDelay = Math.max(0, startDelaySeconds);
+    this.onlineNow = now;
+    this.onlineStartAt = startAt ?? now() + this.onlineStartDelay * 1000;
     this.state = 'CALIBRATION';
   }
   setOnlineRoundSeed(roundSeed: number | null): void {
@@ -151,6 +160,10 @@ export class GameManager {
     rect: VideoRect,
     modelReady = true,
   ): void {
+    if (this.isOnline() && this.onlineStartAt !== null) {
+      this.updateOnline(dt, players, width, height, rect, modelReady);
+      return;
+    }
     if (this.isOnline() && (this.state === 'CALIBRATION' || this.state === 'COUNTDOWN'))
       this.onlineStartDelay = Math.max(0, this.onlineStartDelay - dt);
     if (['CALIBRATION', 'COUNTDOWN', 'PLAYING'].includes(this.state)) {
@@ -207,6 +220,58 @@ export class GameManager {
         this.countdown = 3;
         audio.tone(600, 0.08);
       } else if (this.resultTime >= 5) this.state = 'FINAL';
+    }
+  }
+  private updateOnline(
+    dt: number,
+    players: PlayersTracking,
+    width: number,
+    height: number,
+    rect: VideoRect,
+    modelReady: boolean,
+  ): void {
+    if (this.state === 'MENU' || this.state === 'FINAL') return;
+    const elapsed = Math.max(0, (this.onlineNow() - this.onlineStartAt!) / 1000);
+    const duration = this.miniGame.duration ?? 20;
+    this.countdown = Math.max(0, (this.onlineStartAt! - this.onlineNow()) / 1000);
+    if (this.countdown > 0) {
+      this.state = 'COUNTDOWN';
+      return;
+    }
+    if (this.state === 'CALIBRATION' || this.state === 'COUNTDOWN') {
+      this.state = 'PLAYING';
+      this.miniGame.start(width, height, {
+        mode: 'online',
+        activePlayers: 1,
+        localPlayerSlot: this.getLocalPlayerSlot(),
+        roundSeed: this.onlineRoundSeed,
+        random:
+          this.onlineRoundSeed === undefined ? undefined : createSeededRandom(this.onlineRoundSeed),
+      });
+    }
+    const targetElapsed = Math.min(duration, Math.max(this.elapsed, elapsed));
+    const empty = (): PlayersTracking[number] => ({
+      hands: [],
+      pose: null,
+      face: { face: null, blend: {}, detected: false },
+      detected: false,
+    });
+    const absent: PlayersTracking = [empty(), empty()];
+    // Advance missed time without applying today's observation to past frames.
+    // Bounded steps preserve each game's timed rounds and spawning behavior.
+    const observedTime = modelReady && elapsed < duration ? Math.min(0.1, Math.max(0, dt)) : 0;
+    while (targetElapsed - this.elapsed > observedTime + 0.000001) {
+      const step = Math.min(0.1, targetElapsed - this.elapsed - observedTime);
+      this.miniGame.update(step, absent, rect);
+      this.elapsed += step;
+    }
+    const remaining = targetElapsed - this.elapsed;
+    if (remaining > 0) this.miniGame.update(remaining, modelReady ? players : absent, rect);
+    this.elapsed = targetElapsed;
+    if (elapsed >= duration) {
+      this.lastScores = this.getLiveScores();
+      this.totals = [...this.lastScores];
+      this.state = 'FINAL';
     }
   }
   draw(context: CanvasRenderingContext2D): void {

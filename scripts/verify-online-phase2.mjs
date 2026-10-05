@@ -59,7 +59,8 @@ const onlineSources = [
 ].join('\n');
 assert.match(onlineSources, /rpc\('select_room_game'/);
 assert.match(onlineSources, /rpc\('start_room_game'/);
-assert.doesNotMatch(onlineSources, /setInterval/);
+// Room state stays event-driven. Only unacknowledged writes may retry on a timer.
+assert.doesNotMatch(onlineSources, /setInterval\([^;]*(refresh|fetchRoom)/);
 
 const onlineScreen = read('src/components/OnlineScreen.tsx');
 assert.match(

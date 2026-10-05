@@ -17,6 +17,7 @@ import {
   submitRoundScore,
 } from './room-service';
 import { subscribeToRoom } from './room-realtime';
+import { ScoreOutbox } from './score-outbox';
 import type { OnlineEvent } from './online-events';
 import {
   OnlineRoomError,
@@ -38,6 +39,27 @@ export function useOnlineRoom() {
   const busyRef = useRef(false);
   const sendEventRef = useRef<((event: OnlineEvent) => Promise<void>) | null>(null);
   const eventSubscribers = useRef(new Set<(event: OnlineEvent) => void>());
+  const outbox = useRef<ScoreOutbox | null>(null);
+  if (!outbox.current) {
+    let storage: Storage | undefined;
+    try {
+      storage = window.localStorage;
+    } catch {
+      /* Storage can be disabled. */
+    }
+    outbox.current = new ScoreOutbox(storage);
+  }
+  const [scorePending, setScorePending] = useState(false);
+  const flushScores = useCallback(async () => {
+    try {
+      await outbox.current!.flush((score) =>
+        submitRoundScore(score.roomId, score.roundId, score.score, score.sequence, score.final),
+      );
+    } catch {
+      /* Retained for the next connection event or retry interval. */
+    }
+    if (mounted.current) setScorePending(outbox.current!.hasPending());
+  }, []);
 
   const applyError = useCallback((reason: unknown) => {
     setError(
@@ -73,6 +95,19 @@ export function useOnlineRoom() {
 
   const roomId = snapshot?.room.id;
   const currentUserId = snapshot?.currentUserId;
+  const roundId = snapshot?.room.roundId;
+  useEffect(() => {
+    if (!roomId || !currentUserId) return;
+    outbox.current!.setScope(roomId, roundId ?? null, currentUserId);
+    void flushScores();
+    const timer = window.setInterval(() => void flushScores(), 1500);
+    const retry = () => void flushScores();
+    window.addEventListener('online', retry);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('online', retry);
+    };
+  }, [roomId, roundId, currentUserId, flushScores]);
   const acceptSnapshot = useCallback(async (next: RoomSnapshot | null) => {
     if (next?.room.startAt && next.room.sessionState !== 'waiting') {
       try {
@@ -172,6 +207,7 @@ export function useOnlineRoom() {
     snapshot,
     presence,
     connected,
+    scorePending,
     clockOffsetMs,
     busy,
     error,
@@ -195,14 +231,21 @@ export function useOnlineRoom() {
         sequence,
         final,
       };
-      try {
-        await Promise.all([
-          sendEvent(event),
-          submitRoundScore(snapshot.room.id, roundId, score, sequence, final),
-        ]);
-      } catch (reason) {
-        applyError(reason);
-      }
+      const queue = outbox.current!;
+      queue.setScope(snapshot.room.id, roundId, snapshot.currentUserId);
+      const nextSequence = Math.max(sequence, queue.getSequence() + 1);
+      queue.enqueue({
+        roomId: snapshot.room.id,
+        roundId,
+        userId: snapshot.currentUserId,
+        score,
+        sequence: nextSequence,
+        final,
+      });
+      setScorePending(queue.hasPending());
+      // Persistence is authoritative; a failed Broadcast must not block its retry.
+      void sendEvent({ ...event, sequence: nextSequence }).catch(() => undefined);
+      await flushScores();
     },
     create: (name: string) => run('creating', async () => setSnapshot(await createRoom(name))),
     join: (code: string, name: string) =>

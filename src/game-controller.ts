@@ -114,11 +114,20 @@ export class GameController {
     this.elements.root.focus();
   }
 
-  runOnline(startDelaySeconds: number, roundSeed: number | null = null): boolean {
+  runOnline(
+    startDelaySeconds: number,
+    roundSeed: number | null = null,
+    startAt?: number,
+    clockOffsetMs = 0,
+  ): boolean {
     if (!this.prepared || this.running || !this.manager.isOnline()) return false;
     this.manager.setOnlineRoundSeed(roundSeed);
     this.running = true;
-    this.manager.enterOnlineCalibration(startDelaySeconds);
+    this.manager.enterOnlineCalibration(
+      startDelaySeconds,
+      startAt,
+      () => Date.now() + clockOffsetMs,
+    );
     this.camera.resize();
     this.previous = performance.now();
     cancelAnimationFrame(this.frame);

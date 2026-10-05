@@ -353,6 +353,8 @@ function LobbyScreen({
     const started = controllerRef.current?.runOnline(
       remainingUntilStart(snapshot.room.startAt, online.clockOffsetMs) / 1000,
       snapshot.room.roundSeed,
+      Date.parse(snapshot.room.startAt),
+      online.clockOffsetMs,
     );
     if (started) startedEngineSessionRef.current = sessionKey;
   }, [
@@ -401,19 +403,29 @@ function LobbyScreen({
     }
   }, [self?.playerSlot, snapshot.room.roundId, snapshot.scores]);
 
+  const finishGameRef = useRef(online.finishGame);
+  finishGameRef.current = online.finishGame;
+  const finalScoreCount = new Set(
+    currentScores.filter((score) => score.isFinal).map((score) => score.playerSlot),
+  ).size;
   useEffect(() => {
     const roundId = snapshot.room.roundId;
     if (!host || !roundId || snapshot.room.sessionState !== 'playing') return;
-    const finalSlots = new Set(
-      snapshot.scores
-        .filter((score) => score.roundId === roundId && score.isFinal)
-        .map((score) => score.playerSlot),
-    );
-    if (finalSlots.size === 2 && finishedRoundRef.current !== roundId) {
-      finishedRoundRef.current = roundId;
-      void online.finishGame(roundId);
-    }
-  }, [host, online.finishGame, snapshot.room.roundId, snapshot.room.sessionState, snapshot.scores]);
+    if (finalScoreCount !== 2 || finishedRoundRef.current === roundId) return;
+    let cancelled = false;
+    let timer = 0;
+    const finish = async () => {
+      const finished = await finishGameRef.current(roundId);
+      if (cancelled) return;
+      if (finished) finishedRoundRef.current = roundId;
+      else timer = window.setTimeout(() => void finish(), 1500);
+    };
+    void finish();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [host, finalScoreCount, snapshot.room.roundId, snapshot.room.sessionState]);
 
   useEffect(() => {
     if (

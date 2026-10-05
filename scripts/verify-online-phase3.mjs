@@ -27,7 +27,8 @@ assert.doesNotMatch(migration, /using\s*\(\s*true\s*\)|drop\s+table|truncate\s+/
 assert.match(service, /rpc\('submit_round_score'/);
 assert.match(realtime, /event: 'online-event'/);
 assert.match(realtime, /table: 'room_round_scores'/);
-assert.match(hook, /Promise\.all\(\[\s*sendEvent\(event\),\s*submitRoundScore/s);
+assert.match(hook, /queue\.enqueue\(/);
+assert.match(hook, /await flushScores\(\)/);
 assert.match(manager, /setOnlineRemoteScore/);
 assert.match(manager, /this\.lastScores\[index\]/);
 
