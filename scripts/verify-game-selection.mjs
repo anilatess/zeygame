@@ -24,8 +24,8 @@ function load(relative) {
 const { createGames } = load('../src/games.ts');
 const { GameManager } = load('../src/game-manager.ts');
 const games = createGames();
-assert.equal(games.length, 8);
-assert.equal(new Set(games.map((game) => game.name)).size, 8);
+assert.equal(games.length, 11);
+assert.equal(new Set(games.map((game) => game.name)).size, 11);
 assert.equal(
   Array.from(new Set(Array.from(games, (game) => game.needs ?? game.tracking)))
     .sort()
@@ -38,7 +38,7 @@ assert.equal(manager.getGames().length, games.length);
 games.forEach((game, index) => assert.equal(manager.getGames()[index], game));
 manager.startParty();
 assert.equal(manager.getSession().mode, 'party');
-assert.equal(manager.getSession().games.length, 8);
+assert.equal(manager.getSession().games.length, games.length);
 for (let index = 0; index < games.length; index++) {
   manager.startSingle(index);
   assert.equal(manager.getSession().mode, 'single');
@@ -50,13 +50,13 @@ for (let index = 0; index < games.length; index++) {
   assert.equal(manager.hasNextGame(), false);
 }
 assert.throws(() => manager.startSingle(-1));
-assert.throws(() => manager.startSingle(8));
+assert.throws(() => manager.startSingle(games.length));
 assert.throws(() => manager.startSoloTest(-1));
-assert.throws(() => manager.startSoloTest(8));
+assert.throws(() => manager.startSoloTest(games.length));
 manager.startParty();
 assert.equal(
   manager.getSession().games.length,
-  8,
+  games.length,
   'party catalog is restored after selected sessions',
 );
 
@@ -73,5 +73,5 @@ assert.match(app, /manager\?\.isSoloTest\(\) \? 'solo-test' : 'select'/);
 assert.match(menu, /data-game-index=\{index\}/);
 
 console.log(
-  'PASS selection: eight registry games, party/single/solo sessions, invalid indices, React-derived cards and return routes',
+  'PASS selection: eleven registry games, party/single/solo sessions, invalid indices, React-derived cards and return routes',
 );

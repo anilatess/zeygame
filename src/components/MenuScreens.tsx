@@ -293,6 +293,9 @@ const categories: Record<string, Category> = {
   'Buz Kırma': 'Refleks',
   'Meyve Kesme': 'Refleks',
   'Ağızla Yakala': 'Refleks',
+  'Balon Patlatma': 'Refleks',
+  'Don–Hareket Et': 'Ritim',
+  'Sanal Kaleci': 'Fitness',
   'Çömelme Yarışı': 'Fitness',
   'Zıplama Yarışı': 'Fitness',
   'Ağız Açma Yarışı': 'Yüz',
@@ -308,6 +311,9 @@ const tones: Record<string, string> = {
   'Dans Taklidi': 'green',
   'Surat Taklidi': 'yellow',
   'Ağızla Yakala': 'coral',
+  'Balon Patlatma': 'pink',
+  'Don–Hareket Et': 'green',
+  'Sanal Kaleci': 'blue',
 };
 
 function GameLibrary({

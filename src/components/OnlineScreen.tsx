@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { gameIndexById } from '../games';
+import { gameIndexById, ONLINE_GAME_IDS } from '../games';
 import type { GameController } from '../game-controller';
 import { CAMERA_BYPASS_ENABLED } from '../online/camera-bypass';
 import {
@@ -45,7 +45,10 @@ export function OnlineScreen({
   defaultName: string;
   onMatchComplete: (result: OnlineMatchResult) => void;
 }) {
-  const onlineGames = useMemo(() => [...games], [games]);
+  const onlineGames = useMemo(
+    () => games.filter((game) => (ONLINE_GAME_IDS as readonly string[]).includes(game.id)),
+    [games],
+  );
   const online = useOnlineRoom();
   const portrait = usePortrait();
   const invitedRoomCode = useMemo(() => roomCodeFromInvite(window.location.search), []);

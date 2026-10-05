@@ -6,6 +6,9 @@ import { JumpRace } from './games/jump-race';
 import { DanceMimic } from './games/dance-mimic';
 import { FaceMimic } from './games/face-mimic';
 import { MouthCatch } from './games/mouth-catch';
+import { BalloonPop } from './games/balloon-pop';
+import { FreezeDance } from './games/freeze-dance';
+import { Goalkeeper } from './games/goalkeeper';
 import type { MiniGame } from './types';
 
 export const GAME_IDS = [
@@ -17,7 +20,12 @@ export const GAME_IDS = [
   'dance-mimic',
   'face-mimic',
   'mouth-catch',
+  'balloon-pop',
+  'freeze-dance',
+  'goalkeeper',
 ] as const;
+
+export const ONLINE_GAME_IDS = GAME_IDS.slice(0, 8);
 
 export type GameId = (typeof GAME_IDS)[number];
 
@@ -39,5 +47,8 @@ export function createGames(): MiniGame[] {
     new DanceMimic(),
     new FaceMimic(),
     new MouthCatch(),
+    new BalloonPop(),
+    new FreezeDance(),
+    new Goalkeeper(),
   ];
 }

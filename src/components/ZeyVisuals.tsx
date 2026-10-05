@@ -114,6 +114,29 @@ const drawings: Record<string, React.ReactNode> = {
       <path d="M64 21v12M24 27 12 15m92 12 12-15" />
     </>
   ),
+  'Balon Patlatma': (
+    <>
+      <ellipse cx="43" cy="48" rx="22" ry="29" />
+      <ellipse cx="88" cy="60" rx="20" ry="27" />
+      <path d="m43 77-5 8h10l-5-8m45 10-5 8h10l-5-8M43 85q12 18 20 34M88 95q-11 13-20 24M18 37l-9-8m99 4 10-9" />
+    </>
+  ),
+  'Don–Hareket Et': (
+    <>
+      <circle cx="38" cy="36" r="13" />
+      <path d="M38 49v35M38 57 15 76m23-19 22 18M38 84l-20 28m20-28 22 28" />
+      <rect x="72" y="24" width="38" height="76" rx="18" />
+      <circle cx="91" cy="45" r="9" />
+      <circle cx="91" cy="76" r="9" />
+    </>
+  ),
+  'Sanal Kaleci': (
+    <>
+      <path d="M14 109V38h100v71M14 58h100M34 38v71m20-71v71m20-71v71m20-71v71" />
+      <circle cx="64" cy="76" r="17" />
+      <path d="m56 63 8-6 8 6-3 10H59l-3-10m-8 21 16 9 16-9" />
+    </>
+  ),
 };
 
 export function GameIllustration({ name }: { name: string }) {
