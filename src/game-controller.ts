@@ -63,6 +63,7 @@ export class GameController {
     selectedIndex?: number,
     localPlayerSlot?: 1 | 2,
     roundSeed?: number,
+    durationMultiplier = 1,
   ): Promise<boolean> {
     if (this.prepared || this.running) return false;
     this.finalNotified = false;
@@ -70,7 +71,12 @@ export class GameController {
     if (mode === 'party') this.manager.startParty();
     else if (mode === 'solo-test') this.manager.startSoloTest(this.requireIndex(selectedIndex));
     else if (mode === 'online')
-      this.manager.startOnline(this.requireIndex(selectedIndex), localPlayerSlot ?? 1, roundSeed);
+      this.manager.startOnline(
+        this.requireIndex(selectedIndex),
+        localPlayerSlot ?? 1,
+        roundSeed,
+        durationMultiplier,
+      );
     else this.manager.startSingle(this.requireIndex(selectedIndex));
     const generation = ++this.generation;
     audio.unlock();

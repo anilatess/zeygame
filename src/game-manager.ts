@@ -19,6 +19,7 @@ export class GameManager {
   private onlineStartAt: number | null = null;
   private onlineNow: () => number = Date.now;
   private onlineRoundSeed: number | undefined;
+  private onlineDurationMultiplier = 1;
   private remoteScores: [number | null, number | null] = [null, null];
   private activeSession: Session;
   constructor(private readonly games: MiniGame[]) {
@@ -49,11 +50,17 @@ export class GameManager {
     this.activeSession = { mode: 'solo-test', games: [this.games[index]] };
     this.reset();
   }
-  startOnline(index: number, localPlayerSlot: 1 | 2, roundSeed?: number): void {
+  startOnline(
+    index: number,
+    localPlayerSlot: 1 | 2,
+    roundSeed?: number,
+    durationMultiplier = 1,
+  ): void {
     if (!Number.isInteger(index) || index < 0 || index >= this.games.length)
       throw new Error('Geçersiz oyun seçimi.');
     this.activeSession = { mode: 'online', games: [this.games[index]], localPlayerSlot };
     this.onlineRoundSeed = roundSeed;
+    this.onlineDurationMultiplier = Math.max(0.5, Math.min(1.5, durationMultiplier));
     this.reset();
   }
   isSoloTest(): boolean {
@@ -87,7 +94,7 @@ export class GameManager {
     return Math.ceil(this.countdown);
   }
   getRemainingTime(): number {
-    return Math.max(0, Math.ceil((this.miniGame.duration ?? 20) - this.elapsed));
+    return Math.max(0, Math.ceil(this.getRoundDuration() - this.elapsed));
   }
   getScores(): [number, number] {
     return [...this.lastScores];
@@ -133,6 +140,7 @@ export class GameManager {
     this.totals = [0, 0];
     this.onlineStartDelay = 0;
     this.onlineStartAt = null;
+    if (!this.isOnline()) this.onlineDurationMultiplier = 1;
     this.remoteScores = [null, null];
   }
   enterCalibration(): void {
@@ -205,7 +213,7 @@ export class GameManager {
     } else if (this.state === 'PLAYING') {
       this.elapsed += dt;
       this.miniGame.update(dt, players, rect);
-      if (this.elapsed >= (this.miniGame.duration ?? 20)) {
+      if (this.elapsed >= this.getRoundDuration()) {
         this.lastScores = this.getLiveScores();
         this.totals[0] += this.lastScores[0];
         this.totals[1] += this.lastScores[1];
@@ -232,7 +240,7 @@ export class GameManager {
   ): void {
     if (this.state === 'MENU' || this.state === 'FINAL') return;
     const elapsed = Math.max(0, (this.onlineNow() - this.onlineStartAt!) / 1000);
-    const duration = this.miniGame.duration ?? 20;
+    const duration = this.getRoundDuration();
     this.countdown = Math.max(0, (this.onlineStartAt! - this.onlineNow()) / 1000);
     if (this.countdown > 0) {
       this.state = 'COUNTDOWN';
@@ -279,6 +287,9 @@ export class GameManager {
       this.totals = [...this.lastScores];
       this.state = 'FINAL';
     }
+  }
+  private getRoundDuration(): number {
+    return (this.miniGame.duration ?? 20) * (this.isOnline() ? this.onlineDurationMultiplier : 1);
   }
   draw(context: CanvasRenderingContext2D): void {
     if (this.state !== 'PLAYING') return;

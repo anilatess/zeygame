@@ -18,6 +18,7 @@ import { useRoomPeer } from '../online/use-room-peer';
 import { createPeerMediaStream } from '../online/webrtc-config';
 import { createRoomInviteUrl, roomCodeFromInvite } from '../online/invite-link';
 import { calculateMatchScore } from '../online/match-score';
+import { difficultyForRound } from '../online/match-difficulty';
 import type { OnlineReaction } from '../online/online-events';
 import type { RoomPlayer } from '../online/room-types';
 import type { MiniGame } from '../types';
@@ -219,6 +220,7 @@ function LobbyScreen({
   const scoreTwo = currentScores.find((score) => score.playerSlot === 2)?.score ?? 0;
   const match = useMemo(() => calculateMatchScore(snapshot.scores), [snapshot.scores]);
   const nextRoundNumber = Math.min(3, match.rounds.length + 1);
+  const difficulty = difficultyForRound(match.rounds.length);
   const controllerRef = useRef<GameController | null>(null);
   const pageRef = useRef<HTMLElement>(null);
   const [liveLocalScore, setLiveLocalScore] = useState(0);
@@ -522,6 +524,8 @@ function LobbyScreen({
           'online',
           gameIndexById(games, snapshot.room.selectedGameId),
           self.playerSlot,
+          undefined,
+          difficulty.durationMultiplier,
         ),
         () => controller.stop(),
       );
@@ -622,11 +626,11 @@ function LobbyScreen({
         }
         localScore={liveLocalScore}
         remoteScore={liveRemoteScore}
-        gameName={selectedGame?.name ?? 'ZeyGame'}
+        gameName={`${selectedGame?.name ?? 'ZeyGame'} · ${difficulty.label}`}
         remaining={Math.max(
           0,
           Math.ceil(
-            (selectedGame?.duration ?? 20) -
+            (selectedGame?.duration ?? 20) * difficulty.durationMultiplier -
               Math.max(0, (serverNow - Date.parse(snapshot.room.startAt ?? '')) / 1000),
           ),
         )}
@@ -757,6 +761,10 @@ function LobbyScreen({
                 ? `Maç durumu ${match.winsOne}–${match.winsTwo}. Kameranı hazırla ve yeniden hazır ol.`
                 : 'Arkadaşına bu kodu gönder, sonra birlikte hazır olun.'}
             </p>
+            <div className={`match-difficulty ${difficulty.id}`}>
+              <span>{nextRoundNumber}. RAUND ZORLUĞU</span>
+              <strong>{difficulty.label}</strong>
+            </div>
           </section>
           <section className="room-code-card">
             <span>ODA KODU</span>

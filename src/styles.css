@@ -769,6 +769,30 @@ strong,
   color: #6f6878;
   font-weight: 700;
 }
+.match-difficulty {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 3px solid var(--zg-ink);
+  border-radius: 999px;
+  background: white;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+.match-difficulty strong {
+  font-size: 1rem;
+}
+.match-difficulty.relaxed strong {
+  color: #28785e;
+}
+.match-difficulty.normal strong {
+  color: #7452bb;
+}
+.match-difficulty.hard strong {
+  color: #d84452;
+}
 .room-code-card {
   width: min(650px, 100%);
   margin: 0 auto;
