@@ -261,6 +261,7 @@ function LobbyScreen({
     null,
   );
   const [peerLocalStream, setPeerLocalStream] = useState<MediaStream | null>(null);
+  const [microphoneMuted, setMicrophoneMuted] = useState(false);
   const [remoteReaction, setRemoteReaction] = useState<{
     value: OnlineReaction;
     id: number;
@@ -350,6 +351,7 @@ function LobbyScreen({
       stopPeerAudioRef.current();
       stopPeerAudioRef.current = () => undefined;
       setPeerLocalStream(null);
+      setMicrophoneMuted(false);
       setCameraMode('none');
       setCameraBusy(false);
       scoreSequenceRef.current = 0;
@@ -523,6 +525,7 @@ function LobbyScreen({
       stopPeerAudioRef.current();
       stopPeerAudioRef.current = () => undefined;
       setPeerLocalStream(null);
+      setMicrophoneMuted(false);
       setCameraMode('none');
       startedEngineSessionRef.current = null;
       confirmingRoundRef.current = null;
@@ -565,6 +568,7 @@ function LobbyScreen({
           const peerMedia = await createPeerMediaStream(cameraStream);
           stopPeerAudioRef.current = peerMedia.stopAudio;
           setPeerLocalStream(peerMedia.stream);
+          setMicrophoneMuted(false);
           setNotice(
             peerMedia.hasAudio
               ? 'Kamera, hareket algılama ve mikrofon hazır!'
@@ -579,6 +583,7 @@ function LobbyScreen({
       stopPeerAudioRef.current();
       stopPeerAudioRef.current = () => undefined;
       setPeerLocalStream(null);
+      setMicrophoneMuted(false);
       setCameraMode('none');
       setNotice(cameraPreparationErrorMessage(error));
       console.warn('Online camera preparation failed.', error);
@@ -640,6 +645,13 @@ function LobbyScreen({
       .catch(() => setNotice('Tepki gönderilemedi.'));
   };
 
+  const toggleMicrophone = () => {
+    if (!peerLocalStream) return;
+    const nextMuted = !microphoneMuted;
+    for (const track of peerLocalStream.getAudioTracks()) track.enabled = !nextMuted;
+    setMicrophoneMuted(nextMuted);
+  };
+
   return (
     <main
       ref={pageRef}
@@ -668,6 +680,8 @@ function LobbyScreen({
         onFullscreen={() => void requestOnlineFullscreen(pageRef.current)}
         reaction={remoteReaction}
         onReaction={sendReaction}
+        microphoneMuted={microphoneMuted}
+        onToggleMicrophone={toggleMicrophone}
         remote={<RemotePeerVideo stream={peer.remoteStream} state={peer.state} />}
       >
         <GameHost

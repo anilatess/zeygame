@@ -65,6 +65,8 @@ export function OnlineArena({
   onFullscreen,
   reaction,
   onReaction,
+  microphoneMuted,
+  onToggleMicrophone,
 }: {
   active: boolean;
   children: ReactNode;
@@ -80,6 +82,8 @@ export function OnlineArena({
   onFullscreen: () => void;
   reaction: { value: OnlineReaction; id: number } | null;
   onReaction: (reaction: OnlineReaction) => void;
+  microphoneMuted: boolean;
+  onToggleMicrophone: () => void;
 }) {
   return (
     <section className="online-arena" hidden={!active} aria-label="İki kişilik online oyun alanı">
@@ -110,6 +114,9 @@ export function OnlineArena({
       </header>
       <nav className="online-arena-actions" aria-label="Oyun kontrolleri">
         <button onClick={onBack}>Odadan ayrıl</button>
+        <button onClick={onToggleMicrophone} aria-pressed={microphoneMuted}>
+          {microphoneMuted ? '🎙️ Mikrofonu aç' : '🎙️ Mikrofon açık'}
+        </button>
         <div className="arena-reactions" aria-label="Rakibe tepki gönder">
           {ONLINE_REACTIONS.map((item) => (
             <button
@@ -131,6 +138,7 @@ export function OnlineArena({
 export function RemotePeerVideo({ stream, state }: { stream: MediaStream | null; state: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playBlocked, setPlayBlocked] = useState(false);
+  const [soundMuted, setSoundMuted] = useState(false);
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -161,6 +169,19 @@ export function RemotePeerVideo({ stream, state }: { stream: MediaStream | null;
           }}
         >
           Görüntüyü ve sesi aç
+        </button>
+      )}
+      {stream && (
+        <button
+          className="remote-sound-toggle"
+          aria-pressed={soundMuted}
+          onClick={() => {
+            const next = !soundMuted;
+            setSoundMuted(next);
+            if (videoRef.current) videoRef.current.muted = next;
+          }}
+        >
+          {soundMuted ? '🔇 Rakibin sesini aç' : '🔊 Rakibin sesi açık'}
         </button>
       )}
     </aside>

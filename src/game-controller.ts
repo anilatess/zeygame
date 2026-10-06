@@ -281,6 +281,7 @@ export class GameController {
     }
     if (this.manager.getState() === 'FINAL' && !this.finalNotified) {
       this.finalNotified = true;
+      audio.say('Oyun bitti!');
       if (this.manager.isOnline()) {
         const localIndex = this.manager.getLocalPlayerSlot() - 1;
         this.onScore?.(this.manager.getLiveScores()[localIndex], true);

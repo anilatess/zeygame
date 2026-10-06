@@ -58,7 +58,28 @@ class AudioService {
     }
   }
 
+  say(message: string): void {
+    try {
+      if (typeof speechSynthesis === 'undefined' || typeof SpeechSynthesisUtterance === 'undefined')
+        return;
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(message);
+      utterance.lang = 'tr-TR';
+      utterance.rate = 1.08;
+      utterance.pitch = 1.12;
+      utterance.volume = 0.75;
+      speechSynthesis.speak(utterance);
+    } catch {
+      /* Konuşma sentezi desteklenmiyorsa oyun sessiz devam eder. */
+    }
+  }
+
   stopAll(): void {
+    try {
+      if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+    } catch {
+      /* Tarayıcı konuşma motorunu kapatamasa da oyun durdurulur. */
+    }
     for (const { oscillator } of this.activeTones) {
       try {
         oscillator.stop();

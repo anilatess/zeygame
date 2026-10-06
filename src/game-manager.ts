@@ -20,6 +20,7 @@ export class GameManager {
   private onlineNow: () => number = Date.now;
   private onlineRoundSeed: number | undefined;
   private onlineDurationMultiplier = 1;
+  private lastTenAnnounced = false;
   private remoteScores: [number | null, number | null] = [null, null];
   private activeSession: Session;
   constructor(private readonly games: MiniGame[]) {
@@ -142,6 +143,7 @@ export class GameManager {
     this.onlineStartAt = null;
     if (!this.isOnline()) this.onlineDurationMultiplier = 1;
     this.remoteScores = [null, null];
+    this.lastTenAnnounced = false;
   }
   enterCalibration(): void {
     this.state = 'CALIBRATION';
@@ -209,10 +211,12 @@ export class GameManager {
               ? createSeededRandom(this.onlineRoundSeed)
               : undefined,
         });
+        audio.say('Başla!');
       }
     } else if (this.state === 'PLAYING') {
       this.elapsed += dt;
       this.miniGame.update(dt, players, rect);
+      this.announceLastTen(this.getRoundDuration());
       if (this.elapsed >= this.getRoundDuration()) {
         this.lastScores = this.getLiveScores();
         this.totals[0] += this.lastScores[0];
@@ -256,6 +260,7 @@ export class GameManager {
         random:
           this.onlineRoundSeed === undefined ? undefined : createSeededRandom(this.onlineRoundSeed),
       });
+      audio.say('Başla!');
     }
     const targetElapsed = Math.min(duration, Math.max(this.elapsed, elapsed));
     const empty = (): PlayersTracking[number] => ({
@@ -282,6 +287,7 @@ export class GameManager {
     if (remaining > 0)
       this.miniGame.update(remaining, modelReady && elapsed < duration ? players : absent, rect);
     this.elapsed = targetElapsed;
+    this.announceLastTen(duration);
     if (elapsed >= duration) {
       this.lastScores = this.getLiveScores();
       this.totals = [...this.lastScores];
@@ -290,6 +296,12 @@ export class GameManager {
   }
   private getRoundDuration(): number {
     return (this.miniGame.duration ?? 20) * (this.isOnline() ? this.onlineDurationMultiplier : 1);
+  }
+  private announceLastTen(duration: number): void {
+    if (!this.lastTenAnnounced && duration - this.elapsed <= 10 && duration - this.elapsed > 0) {
+      this.lastTenAnnounced = true;
+      audio.say('Son on saniye!');
+    }
   }
   draw(context: CanvasRenderingContext2D): void {
     if (this.state !== 'PLAYING') return;
