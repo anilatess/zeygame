@@ -3,7 +3,14 @@ import type { MiniGame } from '../types';
 import { ZeyHeader } from './ZeyHeader';
 import { GameIllustration, Mascot } from './ZeyVisuals';
 import { OnlineScreen } from './OnlineScreen';
-import { AVATARS, type OnlineMatchResult, type PlayerProfile } from '../profile-store';
+import {
+  AVATARS,
+  dailyProgress,
+  profileAchievements,
+  unlockedAvatars,
+  type OnlineMatchResult,
+  type PlayerProfile,
+} from '../profile-store';
 
 export type MenuScreen = 'menu' | 'games' | 'howto' | 'select' | 'solo-test' | 'online' | 'profile';
 
@@ -218,6 +225,9 @@ function ProfileScreen({
   const bestGame = games
     .map((game) => ({ game, score: profile.stats.bestScores[game.id] ?? 0 }))
     .sort((a, b) => b.score - a.score)[0];
+  const achievements = profileAchievements(profile);
+  const availableAvatars = unlockedAvatars(profile);
+  const daily = dailyProgress(profile);
   const save = () => onChange({ ...profile, displayName: draftName.trim().slice(0, 20) });
   return (
     <main className="zg-page profile-page">
@@ -246,9 +256,16 @@ function ProfileScreen({
               key={avatar}
               className={profile.avatar === avatar ? 'selected' : ''}
               aria-pressed={profile.avatar === avatar}
-              onClick={() => onChange({ ...profile, avatar })}
+              disabled={!availableAvatars.includes(avatar)}
+              title={
+                availableAvatars.includes(avatar)
+                  ? `${avatar} avatarını seç`
+                  : 'Başarımı tamamlayarak aç'
+              }
+              onClick={() => availableAvatars.includes(avatar) && onChange({ ...profile, avatar })}
             >
               {avatar}
+              {!availableAvatars.includes(avatar) && <small>🔒</small>}
             </button>
           ))}
         </fieldset>
@@ -283,6 +300,28 @@ function ProfileScreen({
         <span>EN İYİ OYUN</span>
         <strong>{bestGame?.score ? bestGame.game.name : 'Henüz maç yok'}</strong>
         <b>{bestGame?.score ?? 0} puan</b>
+      </section>
+      <section className={`daily-challenge ${daily.complete ? 'complete' : ''}`}>
+        <span className="zg-sticker coral">GÜNLÜK GÖREV</span>
+        <div>
+          <strong>{daily.complete ? 'Görev tamamlandı!' : 'Bugün 3 online maç oyna'}</strong>
+          <small>
+            {daily.current} / {daily.target}
+          </small>
+        </div>
+        <progress value={daily.current} max={daily.target} aria-label="Günlük görev ilerlemesi" />
+      </section>
+      <section className="achievements-section">
+        <h2>Başarımlar</h2>
+        <div className="achievement-grid">
+          {achievements.map((achievement) => (
+            <article key={achievement.id} className={achievement.unlocked ? 'unlocked' : 'locked'}>
+              <b>{achievement.unlocked ? achievement.icon : '🔒'}</b>
+              <strong>{achievement.title}</strong>
+              <span>{achievement.description}</span>
+            </article>
+          ))}
+        </div>
       </section>
     </main>
   );
